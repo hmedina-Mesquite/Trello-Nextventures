@@ -20,6 +20,26 @@ env vars in the Vercel project settings — Vite bakes them in at build time, so
 they must be set before each deploy. No other config is needed; Vercel's Vite
 preset already knows the build command (`vite build`) and output dir (`dist`).
 
+## Deployment (Railway)
+
+No Dockerfile or railway.json needed — Railway's Nixpacks builder auto-detects
+this as a Node project and runs `npm install`, then `npm run build`
+(`tsc -b && vite build`), then `npm start`. `npm start` runs
+`vite preview --host 0.0.0.0 --port $PORT`, which serves the built `dist/`
+and falls back unmatched routes to `index.html` by default (Vite's preview
+server enables this SPA fallback automatically), so client-side routes like
+`/boards/:id` work on a hard refresh — same requirement the Vercel rewrite
+above handles, just via a different mechanism since there's no static-rewrite
+config on Railway.
+
+1. Push this repo to GitHub, then in Railway: New Project → Deploy from GitHub repo.
+2. In the Railway project's Variables tab, set `VITE_SUPABASE_URL` and
+   `VITE_SUPABASE_ANON_KEY` (same values as your local `.env`) — Vite bakes
+   these into the build, so they must be set before the first deploy and
+   before any redeploy that should pick up a change.
+3. Railway assigns a public domain automatically (Settings → Networking →
+   Generate Domain) once the deploy succeeds.
+
 ## Schema
 
 See `supabase/migrations/` — profiles, boards, lists, cards, board_members
