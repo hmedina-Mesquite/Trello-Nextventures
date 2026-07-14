@@ -63,6 +63,7 @@ export function CardItem({
           </div>
         )}
         {card.title}
+        <span className="text-xs text-gray-400">{new Date(card.created_at).toLocaleString()}</span>
       </button>
       {open && (
         <CardDetailModal

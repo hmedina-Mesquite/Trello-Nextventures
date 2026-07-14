@@ -112,3 +112,16 @@ export interface BoardMember {
 export interface BoardMemberWithProfile extends BoardMember {
   profiles: { username: string | null } | null
 }
+
+export type NotificationEventType = 'board_invite' | 'member_removed'
+
+export interface Notification {
+  id: string
+  user_id: string
+  event_type: NotificationEventType
+  related_board_id: string | null
+  related_user_id: string | null
+  message: string
+  read: boolean
+  created_at: string
+}

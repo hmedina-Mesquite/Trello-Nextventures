@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
+import { NotificationsBell } from '../components/NotificationsBell'
 import type { Board } from '../types'
 
 const BOARD_COLORS = [
@@ -96,6 +97,7 @@ export default function DashboardPage() {
         <h1 className="text-xl font-bold text-gray-900">Tus tableros</h1>
         <div className="flex items-center gap-4">
           {user && <span className="text-sm text-gray-500">{user.email}</span>}
+          <NotificationsBell />
           <button
             type="button"
             onClick={() => void signOut()}

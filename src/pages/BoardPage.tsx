@@ -17,6 +17,7 @@ import { ListColumn } from '../components/ListColumn'
 import { LabelsPanel } from '../components/LabelsPanel'
 import { MembersPanel } from '../components/MembersPanel'
 import { BackgroundPanel } from '../components/BackgroundPanel'
+import { NotificationsBell } from '../components/NotificationsBell'
 
 function computeFractionalPosition(prev: number | undefined, next: number | undefined): number {
   if (prev === undefined && next === undefined) return 1
@@ -598,6 +599,7 @@ export default function BoardPage() {
               Fondo
             </button>
           )}
+          <NotificationsBell buttonClassName="relative rounded bg-white/10 px-2 py-1.5 text-sm font-medium text-white hover:bg-white/20" />
         </div>
       </header>
 
