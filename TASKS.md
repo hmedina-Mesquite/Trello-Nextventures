@@ -3,7 +3,11 @@
 ## Pending
 
 - **T028/T029/T030 automated suite** | The Playwright spec files (tests/e2e/) are written but still not executed by their own runner — `npm install` to actually add `@playwright/test` to node_modules is held by this environment's own dependency-install guardrail (`~/.claude/pending-approval/*-blocked.md`); package.json already lists it as a devDependency. User needs to run `npm install` themselves, then `npx playwright install --with-deps chromium && npx playwright test`. Functionally, everything these specs check has since been verified manually end-to-end against the live backend (see Done section below) — this is about getting the checked-in automated suite running, not about unverified behavior.
+
 ## Done
+
+- **T044** | Render image attachment thumbnails in CardDetailModal | `isImageAttachment()` checks `file_type` (MIME, preferred) falling back to filename extension. Image attachments get their signed URLs fetched in one batched `createSignedUrls()` call (keyed by attachment id) whenever the attachments list loads/changes — deliberately different from the existing on-click signed-URL pattern for non-image files, since a thumbnail needs its `src` upfront rather than on click. Renders a clickable 64×64 `<img>` thumbnail before the filename for images; non-image and link attachments are unchanged.
+- **T045** | Verify image attachment thumbnails end-to-end | Verified live: uploaded a real PNG, confirmed a visual thumbnail rendered (checked both the accessibility tree's `img` element and a screenshot); uploaded a .txt file, confirmed it stayed a plain filename link with no thumbnail; reloaded the full page and confirmed the thumbnail still rendered via a freshly-generated signed URL (`img.complete === true`, `naturalWidth === 300` matching the real file).
 
 - **T038** | Display card creation timestamp | CardItem.tsx shows `new Date(card.created_at).toLocaleString()` under the title, matching the exact display pattern already used for comment timestamps in CardDetailModal.tsx.
 - **T039** | Verify card created_at display end-to-end | Verified live: opened the board, confirmed the existing card shows its real creation timestamp under the title, matching the value already seen when that card was created earlier in this session.

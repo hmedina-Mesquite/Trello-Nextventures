@@ -22,6 +22,14 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+const IMAGE_EXTENSION_RE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i
+
+function isImageAttachment(attachment: Attachment): boolean {
+  if (!attachment.storage_path) return false
+  if (attachment.file_type) return attachment.file_type.startsWith('image/')
+  return IMAGE_EXTENSION_RE.test(attachment.file_name)
+}
+
 interface CardDetailModalProps {
   card: Card
   boardLabels: Label[]
@@ -62,6 +70,7 @@ export function CardDetailModal({
   const [uploadingFile, setUploadingFile] = useState(false)
   const [newLinkName, setNewLinkName] = useState('')
   const [newLinkUrl, setNewLinkUrl] = useState('')
+  const [imageThumbnails, setImageThumbnails] = useState<Record<string, string>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -150,6 +159,37 @@ export function CardDetailModal({
       cancelled = true
     }
   }, [card.id])
+
+  useEffect(() => {
+    const imageAttachments = attachments.filter(
+      (a): a is Attachment & { storage_path: string } => isImageAttachment(a),
+    )
+    if (imageAttachments.length === 0) return
+    let cancelled = false
+
+    async function loadThumbnails() {
+      const { data, error: signedUrlsError } = await supabase.storage
+        .from(ATTACHMENTS_BUCKET)
+        .createSignedUrls(
+          imageAttachments.map((a) => a.storage_path),
+          3600,
+        )
+      if (cancelled || signedUrlsError || !data) return
+
+      const byPath = new Map(data.map((d) => [d.path, d.signedUrl]))
+      const next: Record<string, string> = {}
+      for (const a of imageAttachments) {
+        const url = byPath.get(a.storage_path)
+        if (url) next[a.id] = url
+      }
+      setImageThumbnails((prev) => ({ ...prev, ...next }))
+    }
+
+    void loadThumbnails()
+    return () => {
+      cancelled = true
+    }
+  }, [attachments])
 
   function commitTitle() {
     const trimmed = title.trim()
@@ -606,6 +646,21 @@ export function CardDetailModal({
                   key={attachment.id}
                   className="flex items-center justify-between gap-2 rounded bg-gray-50 p-2"
                 >
+                  {isImageAttachment(attachment) && imageThumbnails[attachment.id] && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        attachment.storage_path && void handleOpenFileAttachment(attachment.storage_path)
+                      }
+                      className="shrink-0"
+                    >
+                      <img
+                        src={imageThumbnails[attachment.id]}
+                        alt={attachment.file_name}
+                        className="h-16 w-16 rounded border border-gray-200 object-cover"
+                      />
+                    </button>
+                  )}
                   <div className="min-w-0 flex-1">
                     {attachment.url ? (
                       <a
