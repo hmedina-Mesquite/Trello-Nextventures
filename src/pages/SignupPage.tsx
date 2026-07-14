@@ -4,6 +4,20 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 
+// Real enforcement is the `handle_new_user` DB trigger (a direct API call
+// can't bypass it) - this is just so a wrong domain doesn't need a round
+// trip to find out.
+const ALLOWED_EMAIL_DOMAINS = [
+  'nextventures.mx',
+  'aerotower.mx',
+  'binjamovil.com',
+  'cordillera.io',
+  'mesquite.mx',
+  'mintakatech.mx',
+  'ranchomiradorestelar.com',
+  'rigelabs.mx',
+]
+
 export default function SignupPage() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
@@ -18,8 +32,14 @@ export default function SignupPage() {
     e.preventDefault()
     setError(null)
     setInfo(null)
-    setSubmitting(true)
 
+    const domain = email.split('@')[1]?.toLowerCase()
+    if (!domain || !ALLOWED_EMAIL_DOMAINS.includes(domain)) {
+      setError('Signups are restricted to approved company email domains.')
+      return
+    }
+
+    setSubmitting(true)
     const { error: signUpError } = await signUp(email, password, username)
     if (signUpError) {
       setSubmitting(false)
