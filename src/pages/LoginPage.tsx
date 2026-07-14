@@ -27,11 +27,11 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">Log in</h1>
+        <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">Iniciar sesión</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-              Email
+              Correo electrónico
             </label>
             <input
               id="email"
@@ -45,7 +45,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-              Password
+              Contraseña
             </label>
             <input
               id="password"
@@ -63,13 +63,13 @@ export default function LoginPage() {
             disabled={submitting}
             className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {submitting ? 'Logging in…' : 'Log in'}
+            {submitting ? 'Iniciando sesión…' : 'Iniciar sesión'}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
-          Don&apos;t have an account?{' '}
+          ¿No tienes una cuenta?{' '}
           <Link to="/signup" className="font-medium text-blue-600 hover:underline">
-            Sign up
+            Regístrate
           </Link>
         </p>
       </div>

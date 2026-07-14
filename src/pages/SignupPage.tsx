@@ -35,7 +35,7 @@ export default function SignupPage() {
 
     const domain = email.split('@')[1]?.toLowerCase()
     if (!domain || !ALLOWED_EMAIL_DOMAINS.includes(domain)) {
-      setError('Signups are restricted to approved company email domains.')
+      setError('Los registros están restringidos a dominios de correo aprobados por la empresa.')
       return
     }
 
@@ -55,18 +55,18 @@ export default function SignupPage() {
     if (data.session) {
       navigate('/', { replace: true })
     } else {
-      setInfo('Account created. If email confirmation is required, check your inbox, then log in.')
+      setInfo('Cuenta creada. Si se requiere confirmación por correo, revisa tu bandeja de entrada y luego inicia sesión.')
     }
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">Sign up</h1>
+        <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">Registrarse</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label htmlFor="username" className="mb-1 block text-sm font-medium text-gray-700">
-              Username
+              Nombre de usuario
             </label>
             <input
               id="username"
@@ -80,7 +80,7 @@ export default function SignupPage() {
           </div>
           <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-              Email
+              Correo electrónico
             </label>
             <input
               id="email"
@@ -94,7 +94,7 @@ export default function SignupPage() {
           </div>
           <div>
             <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-              Password
+              Contraseña
             </label>
             <input
               id="password"
@@ -114,13 +114,13 @@ export default function SignupPage() {
             disabled={submitting}
             className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {submitting ? 'Signing up…' : 'Sign up'}
+            {submitting ? 'Registrando…' : 'Registrarse'}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
-          Already have an account?{' '}
+          ¿Ya tienes una cuenta?{' '}
           <Link to="/login" className="font-medium text-blue-600 hover:underline">
-            Log in
+            Inicia sesión
           </Link>
         </p>
       </div>

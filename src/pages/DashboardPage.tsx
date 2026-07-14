@@ -81,7 +81,7 @@ export default function DashboardPage() {
   }
 
   async function handleDeleteBoard(board: Board) {
-    if (!window.confirm(`Delete board "${board.name}"? This cannot be undone.`)) return
+    if (!window.confirm(`¿Eliminar el tablero "${board.name}"? Esta acción no se puede deshacer.`)) return
     const { error: deleteError } = await supabase.from('boards').delete().eq('id', board.id)
     if (deleteError) {
       setError(deleteError.message)
@@ -93,7 +93,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
-        <h1 className="text-xl font-bold text-gray-900">Your boards</h1>
+        <h1 className="text-xl font-bold text-gray-900">Tus tableros</h1>
         <div className="flex items-center gap-4">
           {user && <span className="text-sm text-gray-500">{user.email}</span>}
           <button
@@ -101,7 +101,7 @@ export default function DashboardPage() {
             onClick={() => void signOut()}
             className="rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
           >
-            Sign out
+            Cerrar sesión
           </button>
         </div>
       </header>
@@ -111,7 +111,7 @@ export default function DashboardPage() {
           <p className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
         )}
         {loading ? (
-          <p className="text-gray-500">Loading boards…</p>
+          <p className="text-gray-500">Cargando tableros…</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {boards.map((board) => (
@@ -128,8 +128,8 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => void handleDeleteBoard(board)}
                     className="absolute right-2 top-2 hidden rounded bg-black/30 px-1.5 py-1 text-xs text-white hover:bg-black/50 group-hover:block"
-                    aria-label={`Delete board ${board.name}`}
-                    title="Delete board"
+                    aria-label={`Eliminar tablero ${board.name}`}
+                    title="Eliminar tablero"
                   >
                     ✕
                   </button>
@@ -143,13 +143,13 @@ export default function DashboardPage() {
                 className="flex h-24 flex-col justify-between rounded-lg border border-gray-200 bg-white p-3 shadow"
               >
                 <label htmlFor="board-name" className="sr-only">
-                  Board name
+                  Nombre del tablero
                 </label>
                 <input
                   id="board-name"
                   autoFocus
                   type="text"
-                  placeholder="Board name"
+                  placeholder="Nombre del tablero"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
@@ -165,7 +165,7 @@ export default function DashboardPage() {
                           newColor === color ? 'ring-2 ring-offset-1 ring-gray-800' : ''
                         }`}
                         style={{ backgroundColor: color }}
-                        aria-label={`Choose color ${color}`}
+                        aria-label={`Elegir color ${color}`}
                       />
                     ))}
                   </div>
@@ -175,14 +175,14 @@ export default function DashboardPage() {
                       disabled={creating || !newName.trim()}
                       className="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                     >
-                      Create
+                      Crear
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowForm(false)}
                       className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
                     >
-                      Cancel
+                      Cancelar
                     </button>
                   </div>
                 </div>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                 onClick={() => setShowForm(true)}
                 className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm font-medium text-gray-500 hover:border-gray-400 hover:text-gray-700"
               >
-                + Create new board
+                + Crear nuevo tablero
               </button>
             )}
           </div>

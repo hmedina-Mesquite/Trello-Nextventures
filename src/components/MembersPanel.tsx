@@ -3,6 +3,11 @@ import type { FormEvent } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import type { BoardMemberWithProfile, BoardRole } from '../types'
 
+const ROLE_LABELS: Record<BoardRole, string> = {
+  owner: 'Propietario',
+  member: 'Miembro',
+}
+
 interface MembersPanelProps {
   boardId: string
   currentUserId: string
@@ -58,7 +63,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
       .maybeSingle()
 
     if (profileError || !profile) {
-      setError(`No user found with username "${username}"`)
+      setError(`No se encontró ningún usuario con el nombre de usuario "${username}"`)
       setInviting(false)
       return
     }
@@ -94,7 +99,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
   }
 
   async function handleRemove(userId: string) {
-    if (!window.confirm('Remove this member from the board?')) return
+    if (!window.confirm('¿Quitar a este miembro del tablero?')) return
     const { error: deleteError } = await supabase
       .from('board_members')
       .delete()
@@ -109,7 +114,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
   }
 
   async function handleLeave() {
-    if (!window.confirm('Leave this board?')) return
+    if (!window.confirm('¿Salir de este tablero?')) return
     const { error: deleteError } = await supabase
       .from('board_members')
       .delete()
@@ -133,12 +138,12 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Members</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Miembros</h2>
           <button
             type="button"
             onClick={onClose}
             className="rounded px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close"
+            aria-label="Cerrar"
           >
             ✕
           </button>
@@ -147,7 +152,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
         {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-gray-500">Loading members…</p>
+          <p className="text-sm text-gray-500">Cargando miembros…</p>
         ) : (
           <ul className="mb-4 flex flex-col gap-2">
             {members.map((member) => (
@@ -156,16 +161,16 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                 className="flex items-center justify-between gap-2 rounded border border-gray-100 px-3 py-2"
               >
                 <span className="text-sm text-gray-800">
-                  {member.profiles?.username ?? '(unknown user)'}
+                  {member.profiles?.username ?? '(usuario desconocido)'}
                   {member.user_id === currentUserId && (
-                    <span className="ml-1 text-xs text-gray-400">(you)</span>
+                    <span className="ml-1 text-xs text-gray-400">(tú)</span>
                   )}
                 </span>
                 <div className="flex items-center gap-2">
                   {isOwner && member.user_id !== currentUserId ? (
                     <>
                       <label className="sr-only" htmlFor={`role-${member.user_id}`}>
-                        Role for {member.profiles?.username ?? member.user_id}
+                        Rol de {member.profiles?.username ?? member.user_id}
                       </label>
                       <select
                         id={`role-${member.user_id}`}
@@ -173,19 +178,19 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                         onChange={(e) => void handleRoleChange(member.user_id, e.target.value as BoardRole)}
                         className="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-700"
                       >
-                        <option value="owner">Owner</option>
-                        <option value="member">Member</option>
+                        <option value="owner">Propietario</option>
+                        <option value="member">Miembro</option>
                       </select>
                       <button
                         type="button"
                         onClick={() => void handleRemove(member.user_id)}
                         className="rounded px-1.5 py-1 text-xs text-red-600 hover:bg-red-50"
                       >
-                        Remove
+                        Quitar
                       </button>
                     </>
                   ) : (
-                    <span className="text-xs capitalize text-gray-500">{member.role}</span>
+                    <span className="text-xs text-gray-500">{ROLE_LABELS[member.role]}</span>
                   )}
                   {!isOwner && member.user_id === currentUserId && (
                     <button
@@ -193,7 +198,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                       onClick={() => void handleLeave()}
                       className="rounded px-1.5 py-1 text-xs text-red-600 hover:bg-red-50"
                     >
-                      Leave board
+                      Salir del tablero
                     </button>
                   )}
                 </div>
@@ -205,7 +210,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
         {isOwner && (
           <form onSubmit={handleInvite} className="flex flex-col gap-2 border-t border-gray-200 pt-3">
             <label htmlFor="invite-username" className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Invite by username
+              Invitar por nombre de usuario
             </label>
             <div className="flex gap-2">
               <input
@@ -213,7 +218,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                 type="text"
                 value={inviteUsername}
                 onChange={(e) => setInviteUsername(e.target.value)}
-                placeholder="username"
+                placeholder="nombre de usuario"
                 className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
               />
               <button
@@ -221,7 +226,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                 disabled={inviting || !inviteUsername.trim()}
                 className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                Invite
+                Invitar
               </button>
             </div>
           </form>

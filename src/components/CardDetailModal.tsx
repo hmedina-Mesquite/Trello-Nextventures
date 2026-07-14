@@ -167,7 +167,7 @@ export function CardDetailModal({
   }
 
   async function handleDeleteChecklist(checklistId: string) {
-    if (!window.confirm('Delete this checklist?')) return
+    if (!window.confirm('¿Eliminar esta lista de verificación?')) return
     const { error: deleteError } = await supabase.from('checklists').delete().eq('id', checklistId)
     if (deleteError) {
       setModalError(deleteError.message)
@@ -253,7 +253,7 @@ export function CardDetailModal({
   }
 
   async function handleDeleteComment(commentId: string) {
-    if (!window.confirm('Delete this comment?')) return
+    if (!window.confirm('¿Eliminar este comentario?')) return
     const { error: deleteError } = await supabase.from('comments').delete().eq('id', commentId)
     if (deleteError) {
       setModalError(deleteError.message)
@@ -278,7 +278,7 @@ export function CardDetailModal({
       >
         <div className="mb-4 flex items-start justify-between gap-2">
           <label htmlFor="card-title" className="sr-only">
-            Card title
+            Título de la tarjeta
           </label>
           <input
             id="card-title"
@@ -294,7 +294,7 @@ export function CardDetailModal({
             type="button"
             onClick={onClose}
             className="shrink-0 rounded px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close"
+            aria-label="Cerrar"
           >
             ✕
           </button>
@@ -308,7 +308,7 @@ export function CardDetailModal({
           htmlFor="card-description"
           className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500"
         >
-          Description
+          Descripción
         </label>
         <textarea
           id="card-description"
@@ -316,15 +316,15 @@ export function CardDetailModal({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onBlur={commitDescription}
-          placeholder="Add a more detailed description…"
+          placeholder="Agrega una descripción más detallada…"
           className="mb-4 w-full resize-y rounded border border-gray-300 px-2 py-2 text-sm text-gray-800 focus:border-blue-400 focus:outline-none"
         />
 
         {/* Labels */}
         <div className="mb-4">
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Labels</h3>
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Etiquetas</h3>
           {boardLabels.length === 0 ? (
-            <p className="text-sm text-gray-500">No labels on this board yet.</p>
+            <p className="text-sm text-gray-500">Aún no hay etiquetas en este tablero.</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {boardLabels.map((label) => {
@@ -340,7 +340,7 @@ export function CardDetailModal({
                     style={{ backgroundColor: label.color }}
                     aria-pressed={assigned}
                   >
-                    {label.name || '(unnamed)'}
+                    {label.name || '(sin nombre)'}
                   </button>
                 )
               })}
@@ -350,9 +350,9 @@ export function CardDetailModal({
 
         {/* Checklists */}
         <div className="mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Checklists</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Listas de verificación</h3>
           {checklistsLoading ? (
-            <p className="text-sm text-gray-500">Loading checklists…</p>
+            <p className="text-sm text-gray-500">Cargando listas de verificación…</p>
           ) : (
             <div className="flex flex-col gap-3">
               {checklists.map((checklist) => {
@@ -372,7 +372,7 @@ export function CardDetailModal({
                           type="button"
                           onClick={() => void handleDeleteChecklist(checklist.id)}
                           className="rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-red-50 hover:text-red-700"
-                          aria-label={`Delete checklist ${checklist.title}`}
+                          aria-label={`Eliminar lista de verificación ${checklist.title}`}
                         >
                           ✕
                         </button>
@@ -406,7 +406,7 @@ export function CardDetailModal({
                             type="button"
                             onClick={() => void handleDeleteItem(checklist.id, item.id)}
                             className="rounded px-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-700"
-                            aria-label={`Delete item ${item.text}`}
+                            aria-label={`Eliminar elemento ${item.text}`}
                           >
                             ✕
                           </button>
@@ -421,7 +421,7 @@ export function CardDetailModal({
                       className="flex gap-2"
                     >
                       <label htmlFor={`item-${checklist.id}`} className="sr-only">
-                        New checklist item
+                        Nuevo elemento de la lista
                       </label>
                       <input
                         id={`item-${checklist.id}`}
@@ -430,7 +430,7 @@ export function CardDetailModal({
                         onChange={(e) =>
                           setNewItemDrafts((prev) => ({ ...prev, [checklist.id]: e.target.value }))
                         }
-                        placeholder="Add an item"
+                        placeholder="Agregar un elemento"
                         className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
                       />
                       <button
@@ -438,7 +438,7 @@ export function CardDetailModal({
                         disabled={!draft.trim()}
                         className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                       >
-                        Add
+                        Agregar
                       </button>
                     </form>
                   </div>
@@ -447,21 +447,21 @@ export function CardDetailModal({
 
               <form onSubmit={handleAddChecklist} className="flex gap-2">
                 <label htmlFor="new-checklist-title" className="sr-only">
-                  New checklist title
+                  Título de la nueva lista de verificación
                 </label>
                 <input
                   id="new-checklist-title"
                   type="text"
                   value={newChecklistTitle}
                   onChange={(e) => setNewChecklistTitle(e.target.value)}
-                  placeholder="Checklist"
+                  placeholder="Lista de verificación"
                   className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
                 />
                 <button
                   type="submit"
                   className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
                 >
-                  Add checklist
+                  Agregar lista de verificación
                 </button>
               </form>
             </div>
@@ -470,17 +470,17 @@ export function CardDetailModal({
 
         {/* Comments */}
         <div className="mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Comments</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Comentarios</h3>
           {commentsLoading ? (
-            <p className="text-sm text-gray-500">Loading comments…</p>
+            <p className="text-sm text-gray-500">Cargando comentarios…</p>
           ) : (
             <div className="mb-2 flex flex-col gap-2">
-              {comments.length === 0 && <p className="text-sm text-gray-500">No comments yet.</p>}
+              {comments.length === 0 && <p className="text-sm text-gray-500">Aún no hay comentarios.</p>}
               {comments.map((comment) => (
                 <div key={comment.id} className="rounded bg-gray-50 p-2">
                   <div className="mb-1 flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-gray-700">
-                      {comment.profiles?.username ?? '(unknown user)'}
+                      {comment.profiles?.username ?? '(usuario desconocido)'}
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-400">
@@ -491,7 +491,7 @@ export function CardDetailModal({
                           type="button"
                           onClick={() => void handleDeleteComment(comment.id)}
                           className="rounded px-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-700"
-                          aria-label="Delete comment"
+                          aria-label="Eliminar comentario"
                         >
                           ✕
                         </button>
@@ -506,14 +506,14 @@ export function CardDetailModal({
 
           <form onSubmit={handleAddComment} className="flex flex-col gap-2">
             <label htmlFor="new-comment" className="sr-only">
-              Add a comment
+              Agregar un comentario
             </label>
             <textarea
               id="new-comment"
               rows={2}
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write a comment…"
+              placeholder="Escribe un comentario…"
               className="w-full resize-y rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-800 focus:border-blue-400 focus:outline-none"
             />
             <button
@@ -521,7 +521,7 @@ export function CardDetailModal({
               disabled={!newComment.trim()}
               className="self-start rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              Comment
+              Comentar
             </button>
           </form>
         </div>
@@ -531,7 +531,7 @@ export function CardDetailModal({
           onClick={handleDelete}
           className="rounded bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
         >
-          Delete card
+          Eliminar tarjeta
         </button>
       </div>
     </div>

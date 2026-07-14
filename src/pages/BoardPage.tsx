@@ -68,7 +68,7 @@ export default function BoardPage() {
 
       if (cancelled) return
       if (boardError || !boardData) {
-        setError(boardError?.message ?? 'Board not found')
+        setError(boardError?.message ?? 'Tablero no encontrado')
         setLoading(false)
         return
       }
@@ -230,7 +230,7 @@ export default function BoardPage() {
   }
 
   async function handleDeleteList(listId: string) {
-    if (!window.confirm('Delete this list and all its cards?')) return
+    if (!window.confirm('¿Eliminar esta lista y todas sus tarjetas?')) return
     const { error: deleteError } = await supabase.from('lists').delete().eq('id', listId)
     if (deleteError) {
       setError(deleteError.message)
@@ -283,7 +283,7 @@ export default function BoardPage() {
   }
 
   async function handleDeleteCard(cardId: string) {
-    if (!window.confirm('Delete this card?')) return
+    if (!window.confirm('¿Eliminar esta tarjeta?')) return
     const { error: deleteError } = await supabase.from('cards').delete().eq('id', cardId)
     if (deleteError) {
       setError(deleteError.message)
@@ -312,7 +312,7 @@ export default function BoardPage() {
   }
 
   async function handleDeleteLabel(labelId: string) {
-    if (!window.confirm('Delete this label? It will be removed from all cards.')) return
+    if (!window.confirm('¿Eliminar esta etiqueta? Se quitará de todas las tarjetas.')) return
     const { error: deleteError } = await supabase.from('labels').delete().eq('id', labelId)
     if (deleteError) {
       setError(deleteError.message)
@@ -471,7 +471,7 @@ export default function BoardPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-gray-500">
-        Loading board…
+        Cargando tablero…
       </div>
     )
   }
@@ -479,9 +479,9 @@ export default function BoardPage() {
   if (!board) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-gray-700">
-        <p>{error ?? 'Board not found'}</p>
+        <p>{error ?? 'Tablero no encontrado'}</p>
         <Link to="/" className="text-blue-600 underline">
-          Back to dashboard
+          Volver al panel
         </Link>
       </div>
     )
@@ -492,12 +492,12 @@ export default function BoardPage() {
       <header className="flex items-center justify-between gap-4 bg-black/20 px-6 py-4">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-sm font-medium text-white/80 hover:text-white">
-            ← Boards
+            ← Tableros
           </Link>
           {isOwner && editingName ? (
             <>
               <label htmlFor="board-name" className="sr-only">
-                Board name
+                Nombre del tablero
               </label>
               <input
                 id="board-name"
@@ -535,14 +535,14 @@ export default function BoardPage() {
             onClick={() => setShowLabelsPanel(true)}
             className="rounded bg-white/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/20"
           >
-            Labels
+            Etiquetas
           </button>
           <button
             type="button"
             onClick={() => setShowMembersPanel(true)}
             className="rounded bg-white/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/20"
           >
-            Members
+            Miembros
           </button>
         </div>
       </header>
@@ -575,12 +575,12 @@ export default function BoardPage() {
               className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-black/20 p-3"
             >
               <label htmlFor="new-list-name" className="sr-only">
-                New list name
+                Nombre de la nueva lista
               </label>
               <input
                 id="new-list-name"
                 type="text"
-                placeholder="Add a list"
+                placeholder="Agregar una lista"
                 value={newListName}
                 onChange={(e) => setNewListName(e.target.value)}
                 className="rounded border border-transparent bg-white/95 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-400 focus:outline-none"
@@ -590,7 +590,7 @@ export default function BoardPage() {
                 disabled={creatingList || !newListName.trim()}
                 className="self-start rounded bg-white/90 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-white disabled:opacity-50"
               >
-                Add list
+                Agregar lista
               </button>
             </form>
           </div>

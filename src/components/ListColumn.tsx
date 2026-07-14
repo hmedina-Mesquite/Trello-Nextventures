@@ -83,8 +83,8 @@ export function ListColumn({
           {...listeners}
           className="shrink-0 cursor-grab rounded px-1 py-1 text-gray-400 hover:bg-gray-200 active:cursor-grabbing"
           style={{ touchAction: 'none' }}
-          aria-label={`Drag list ${list.name}`}
-          title="Drag to reorder list"
+          aria-label={`Arrastrar lista ${list.name}`}
+          title="Arrastra para reordenar la lista"
         >
           ⠿
         </button>
@@ -115,8 +115,8 @@ export function ListColumn({
           type="button"
           onClick={() => onDelete(list.id)}
           className="shrink-0 rounded px-1.5 py-1 text-xs text-gray-500 hover:bg-red-100 hover:text-red-700"
-          aria-label={`Delete list ${list.name}`}
-          title="Delete list"
+          aria-label={`Eliminar lista ${list.name}`}
+          title="Eliminar lista"
         >
           ✕
         </button>
@@ -143,7 +143,7 @@ export function ListColumn({
       {addingCard ? (
         <form onSubmit={handleAddCardSubmit} className="flex flex-col gap-2">
           <label htmlFor={`new-card-${list.id}`} className="sr-only">
-            New card title
+            Título de la nueva tarjeta
           </label>
           <textarea
             id={`new-card-${list.id}`}
@@ -161,7 +161,7 @@ export function ListColumn({
                 setNewCardTitle('')
               }
             }}
-            placeholder="Enter a title for this card"
+            placeholder="Escribe un título para esta tarjeta"
             className="w-full resize-none rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
           />
           <div className="flex items-center gap-2">
@@ -169,7 +169,7 @@ export function ListColumn({
               type="submit"
               className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
             >
-              Add card
+              Agregar tarjeta
             </button>
             <button
               type="button"
@@ -179,7 +179,7 @@ export function ListColumn({
               }}
               className="text-sm text-gray-500 hover:text-gray-800"
             >
-              Cancel
+              Cancelar
             </button>
           </div>
         </form>
@@ -189,7 +189,7 @@ export function ListColumn({
           onClick={() => setAddingCard(true)}
           className="rounded px-2 py-1.5 text-left text-sm text-gray-600 hover:bg-gray-200"
         >
-          + Add a card
+          + Agregar una tarjeta
         </button>
       )}
     </div>
