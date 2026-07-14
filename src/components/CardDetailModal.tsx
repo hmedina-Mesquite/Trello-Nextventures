@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { sanitizeFileName } from '../lib/storage'
 import { useAuth } from '../contexts/AuthContext'
 import type {
   Attachment,
@@ -307,7 +308,7 @@ export function CardDetailModal({
     if (!file || !user) return
 
     setUploadingFile(true)
-    const path = `${card.id}/${crypto.randomUUID()}-${file.name}`
+    const path = `${card.id}/${crypto.randomUUID()}-${sanitizeFileName(file.name)}`
 
     const { error: uploadError } = await supabase.storage.from(ATTACHMENTS_BUCKET).upload(path, file)
     if (uploadError) {

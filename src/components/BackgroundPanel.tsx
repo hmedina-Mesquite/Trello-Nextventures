@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { sanitizeFileName } from '../lib/storage'
 import type { Board } from '../types'
 
 interface BackgroundPanelProps {
@@ -39,7 +40,7 @@ export function BackgroundPanel({ board, onClose, onBackgroundChange }: Backgrou
     setUploading(true)
     setError(null)
 
-    const path = `${board.id}/${crypto.randomUUID()}-${file.name}`
+    const path = `${board.id}/${crypto.randomUUID()}-${sanitizeFileName(file.name)}`
     const { error: uploadError } = await supabase.storage
       .from('board-backgrounds')
       .upload(path, file)
