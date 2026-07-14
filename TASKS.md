@@ -4,38 +4,10 @@
 
 ### Phase 1: Project Setup
 
-- **T002** | Set up Supabase project and install CLI locally | Backend-Developer | Depends on T001 | **BLOCKED**: org member "desarrolloapp-boop" (co-admin of hmedina-Mesquite's Org) is at their 2-free-project cap in an org we can't see into; pausing our own org's other free project (WhatsApp Test XCIEN) didn't clear it. User is resolving directly with Supabase (upgrade plan or free a slot), will tell us when to retry `create_project`. Local CLI (`supabase`) is already installed and `supabase init` has been run; migrations for T004-T011 are written and ready to apply once a project exists.
-
-### Phase 4: Authentication
-
-- **T012** | Integrate Supabase Auth (signup and login endpoints) | Backend-Developer | Depends on T004
-- **T013** | Create login/signup UI components | Frontend-Developer | Depends on T003, T012
-- **T014** | Implement session persistence and logged-in state management | Frontend-Developer | Depends on T013
-
-### Phase 5: Core UI — Boards, Lists, Cards
-
-- **T015** | Create board dashboard/list view (show all user's boards) | Frontend-Developer | Depends on T014
-- **T016** | Create board view component with lists and cards layout | Frontend-Developer | Depends on T015, T005
-- **T017** | Implement create board UI and logic (call Supabase API) | Frontend-Developer | Depends on T015, T009
-- **T018** | Implement create list UI and logic within a board | Frontend-Developer | Depends on T016
-- **T019** | Implement create card UI and logic within a list | Frontend-Developer | Depends on T016
-- **T020** | Implement edit and delete for boards, lists, and cards | Frontend-Developer | Depends on T017, T018, T019
-
-### Phase 6: Drag-and-Drop
-
-- **T021** | Implement card drag-and-drop between lists with persistence | Frontend-Developer | Depends on T007, T020
-- **T022** | Implement list drag-and-drop with position persistence (stretch goal) | Frontend-Developer | Depends on T007, T021
-
-### Phase 7: Additional Features
-
-- **T023** | Implement labels feature (create, assign to cards, display) | Frontend-Developer | Depends on T020
-- **T024** | Implement checklists feature (create, add items, mark complete) | Frontend-Developer | Depends on T020
-- **T025** | Implement comments feature (add, view, delete on cards) | Frontend-Developer | Depends on T020
+- **T002** | Set up Supabase project and install CLI locally | Backend-Developer | Depends on T001 | **STILL BLOCKED** (retried after user paused Orion Capital and resumed WhatsApp Test XCIEN): Supabase now reports org member "desarrolloapp-boop" (co-admin of hmedina-Mesquite's Org, not an account we have visibility into) is at their 2-free-project cap somewhere outside this org — unaffected by which of our own projects are active/paused. User is resolving directly with Supabase or that account holder. Local CLI is installed, `supabase init` done, migrations for T004-T011 ready to apply the moment a project exists.
 
 ### Phase 8: Collaboration & Permissions
 
-- **T026** | Create board membership/invite UI (add user to board with role) | Frontend-Developer | Depends on T017, T008
-- **T027** | Implement role-based permission enforcement in UI (hide/disable owner-only actions for members) | Frontend-Developer | Depends on T026, T011
 - **T028** | Test end-to-end permission scenarios (member vs owner behavior) | Tester | Depends on T027, all UI features complete
 
 ### Phase 9: Validation & Testing
@@ -60,4 +32,22 @@
 - **T010** | RLS: lists/cards/labels/checklists/comments (any board member) | supabase/migrations/20260714120007_rls_content.sql
 - **T011** | RLS: owner-only board settings + membership management | supabase/migrations/20260714120008_rls_owner_only.sql
   - Note on T004-T011: written and reviewed locally, not yet applied or verified against a live database — blocked on T002. Will run `supabase link` + push these migrations (or apply_migration via MCP) as soon as the project exists.
+- **T012** | Integrate Supabase Auth | src/contexts/AuthContext.tsx — signup/login/signout via supabase.auth, session persisted (supabase-js default localStorage) and kept live via onAuthStateChange
+- **T013** | Login/signup UI | src/pages/LoginPage.tsx, src/pages/SignupPage.tsx
+- **T014** | Session persistence/logged-in state | Covered by AuthContext + src/components/ProtectedRoute.tsx (redirects to /login when no session)
+- **T015** | Board dashboard view | src/pages/DashboardPage.tsx — lists boards the user is a member of (RLS-scoped), create-board form
+- **T016** | Board view component | src/pages/BoardPage.tsx — lists ordered by position, each with its cards
+- **T017** | Create board UI/logic | Part of DashboardPage.tsx, inserts into boards with owner_id; membership row comes from the DB trigger (T008)
+- **T018** | Create list UI/logic | BoardPage.tsx add-list form, position computed as max+1
+- **T019** | Create card UI/logic | src/components/ListColumn.tsx add-card form, position computed per-list
+- **T020** | Edit/delete boards/lists/cards | Inline rename (board/list/card title), delete with window.confirm, card detail modal (src/components/CardDetailModal.tsx) for description
+  - Note on T012-T020: `npm run build` and lint pass clean; not yet smoke-tested against a live backend (still blocked on T002). Needs a real .env with VITE_SUPABASE_URL/ANON_KEY to verify signup trigger, RLS, and position math actually behave against real data.
+- **T021** | Card drag-and-drop, persisted | dnd-kit multi-container pattern in BoardPage.tsx; fractional-midpoint position math on drop, single supabase update per move (includes list_id on cross-list moves)
+- **T022** | List drag-and-drop, persisted | Same fractional-position approach, horizontal SortableContext of ListColumn (grip-handle `⠿` to avoid fighting inline-rename/delete click targets)
+- **T023** | Labels feature | src/components/LabelsPanel.tsx (board-scoped create/delete, 8-color palette); toggle assignment in CardDetailModal; pills shown on CardItem; card_labels for all board cards fetched once (no N+1)
+- **T024** | Checklists feature | CardDetailModal.tsx — create/delete checklist, add/toggle/delete items, x/y progress
+- **T025** | Comments feature | CardDetailModal.tsx — supabase.from('comments').select('*, profiles(username)'), delete gated to author or board owner (RLS-backed)
+- **T026** | Board membership/invite UI | src/components/MembersPanel.tsx — invite by username lookup, owner-only role change/remove, self-service "leave board" for members
+- **T027** | Role-based UI enforcement | BoardPage.tsx fetches caller's board_members.role; gates board-rename and MembersPanel's owner-only controls; list/card CRUD intentionally stays open to all members (matches T010's RLS, not an owner-only action)
+  - Note on T021-T027: `npm run build` and lint pass clean; still blocked on a live backend for interactive/visual verification. Known simplifications: no live onDragOver cross-container preview (resolves on drop only); a drop anywhere in a list's region other than directly on a card appends to that list's end rather than a precise index — both acceptable given T022 is an explicit stretch goal and neither is testable without T002 unblocked anyway.
 

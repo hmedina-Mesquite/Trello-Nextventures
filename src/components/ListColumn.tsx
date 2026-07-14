@@ -1,29 +1,49 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import type { Card, ListWithCards } from '../types'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import type { Card, Label, ListWithCards } from '../types'
 import { CardItem } from './CardItem'
 
 interface ListColumnProps {
   list: ListWithCards
+  boardLabels: Label[]
+  cardLabelsByCardId: Record<string, Label[]>
+  boardOwnerId: string
   onRename: (listId: string, name: string) => void
   onDelete: (listId: string) => void
   onAddCard: (listId: string, title: string) => void
   onUpdateCard: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description'>>) => void
   onDeleteCard: (cardId: string) => void
+  onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
 }
 
 export function ListColumn({
   list,
+  boardLabels,
+  cardLabelsByCardId,
+  boardOwnerId,
   onRename,
   onDelete,
   onAddCard,
   onUpdateCard,
   onDeleteCard,
+  onToggleLabel,
 }: ListColumnProps) {
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(list.name)
   const [newCardTitle, setNewCardTitle] = useState('')
   const [addingCard, setAddingCard] = useState(false)
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: list.id,
+    data: { type: 'list' },
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
 
   function commitRename() {
     setEditingName(false)
@@ -49,8 +69,25 @@ export function ListColumn({
   }
 
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-gray-100 p-3 shadow">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-gray-100 p-3 shadow ${
+        isDragging ? 'opacity-50' : ''
+      }`}
+    >
       <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="shrink-0 cursor-grab rounded px-1 py-1 text-gray-400 hover:bg-gray-200 active:cursor-grabbing"
+          style={{ touchAction: 'none' }}
+          aria-label={`Drag list ${list.name}`}
+          title="Drag to reorder list"
+        >
+          ⠿
+        </button>
         {editingName ? (
           <input
             autoFocus
@@ -85,11 +122,23 @@ export function ListColumn({
         </button>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {list.cards.map((card) => (
-          <CardItem key={card.id} card={card} onUpdate={onUpdateCard} onDelete={onDeleteCard} />
-        ))}
-      </div>
+      <SortableContext items={list.cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+        <div className="flex flex-col gap-2">
+          {list.cards.map((card) => (
+            <CardItem
+              key={card.id}
+              card={card}
+              listId={list.id}
+              labels={cardLabelsByCardId[card.id] ?? []}
+              boardLabels={boardLabels}
+              boardOwnerId={boardOwnerId}
+              onUpdate={onUpdateCard}
+              onDelete={onDeleteCard}
+              onToggleLabel={onToggleLabel}
+            />
+          ))}
+        </div>
+      </SortableContext>
 
       {addingCard ? (
         <form onSubmit={handleAddCardSubmit} className="flex flex-col gap-2">

@@ -1,20 +1,56 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import {
+  DndContext,
+  PointerSensor,
+  closestCorners,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import type { DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { supabase } from '../lib/supabaseClient'
-import type { Board, Card, List, ListWithCards } from '../types'
+import { useAuth } from '../contexts/AuthContext'
+import type { Board, BoardRole, Card, Label, List, ListWithCards } from '../types'
 import { ListColumn } from '../components/ListColumn'
+import { LabelsPanel } from '../components/LabelsPanel'
+import { MembersPanel } from '../components/MembersPanel'
+
+function computeFractionalPosition(prev: number | undefined, next: number | undefined): number {
+  if (prev === undefined && next === undefined) return 1
+  if (prev === undefined) return next! - 1
+  if (next === undefined) return prev + 1
+  return (prev + next) / 2
+}
 
 export default function BoardPage() {
   const { boardId } = useParams<{ boardId: string }>()
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [board, setBoard] = useState<Board | null>(null)
   const [lists, setLists] = useState<ListWithCards[]>([])
+  const [boardLabels, setBoardLabels] = useState<Label[]>([])
+  const [cardLabelIds, setCardLabelIds] = useState<Record<string, string[]>>({})
+  const [currentRole, setCurrentRole] = useState<BoardRole | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [newListName, setNewListName] = useState('')
   const [creatingList, setCreatingList] = useState(false)
+  const [showLabelsPanel, setShowLabelsPanel] = useState(false)
+  const [showMembersPanel, setShowMembersPanel] = useState(false)
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+  const isOwner = currentRole === 'owner'
+
+  const cardLabelsByCardId: Record<string, Label[]> = {}
+  for (const [cardId, labelIds] of Object.entries(cardLabelIds)) {
+    cardLabelsByCardId[cardId] = labelIds
+      .map((labelId) => boardLabels.find((l) => l.id === labelId))
+      .filter((l): l is Label => Boolean(l))
+  }
 
   useEffect(() => {
     if (!boardId) return
@@ -70,6 +106,54 @@ export default function BoardPage() {
         cardsData = (data ?? []) as Card[]
       }
 
+      const { data: labelsData, error: labelsError } = await supabase
+        .from('labels')
+        .select('*')
+        .eq('board_id', boardId)
+        .order('name', { ascending: true })
+
+      if (cancelled) return
+      if (labelsError) {
+        setError(labelsError.message)
+        setLoading(false)
+        return
+      }
+
+      const cardLabelMap: Record<string, string[]> = {}
+      if (cardsData.length > 0) {
+        const { data: cardLabelRows, error: cardLabelsError } = await supabase
+          .from('card_labels')
+          .select('card_id, label_id')
+          .in(
+            'card_id',
+            cardsData.map((c) => c.id),
+          )
+
+        if (cancelled) return
+        if (cardLabelsError) {
+          setError(cardLabelsError.message)
+          setLoading(false)
+          return
+        }
+        for (const row of (cardLabelRows ?? []) as { card_id: string; label_id: string }[]) {
+          cardLabelMap[row.card_id] = [...(cardLabelMap[row.card_id] ?? []), row.label_id]
+        }
+      }
+
+      if (user) {
+        const { data: memberRow, error: memberError } = await supabase
+          .from('board_members')
+          .select('role')
+          .eq('board_id', boardId)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (cancelled) return
+        if (!memberError) {
+          setCurrentRole((memberRow?.role as BoardRole) ?? null)
+        }
+      }
+
       const merged: ListWithCards[] = typedLists.map((list) => ({
         ...list,
         cards: cardsData.filter((card) => card.list_id === list.id),
@@ -79,6 +163,8 @@ export default function BoardPage() {
       setBoard(typedBoard)
       setNameDraft(typedBoard.name)
       setLists(merged)
+      setBoardLabels((labelsData ?? []) as Label[])
+      setCardLabelIds(cardLabelMap)
       setLoading(false)
     }
 
@@ -86,7 +172,7 @@ export default function BoardPage() {
     return () => {
       cancelled = true
     }
-  }, [boardId])
+  }, [boardId, user])
 
   async function handleRenameBoard() {
     if (!board) return
@@ -204,6 +290,182 @@ export default function BoardPage() {
       return
     }
     setLists((prev) => prev.map((l) => ({ ...l, cards: l.cards.filter((c) => c.id !== cardId) })))
+    setCardLabelIds((prev) => {
+      const next = { ...prev }
+      delete next[cardId]
+      return next
+    })
+  }
+
+  async function handleCreateLabel(name: string, color: string) {
+    if (!boardId) return
+    const { data, error: insertError } = await supabase
+      .from('labels')
+      .insert({ board_id: boardId, name, color })
+      .select()
+      .single()
+    if (insertError) {
+      setError(insertError.message)
+      return
+    }
+    setBoardLabels((prev) => [...prev, data as Label])
+  }
+
+  async function handleDeleteLabel(labelId: string) {
+    if (!window.confirm('Delete this label? It will be removed from all cards.')) return
+    const { error: deleteError } = await supabase.from('labels').delete().eq('id', labelId)
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+    setBoardLabels((prev) => prev.filter((l) => l.id !== labelId))
+    setCardLabelIds((prev) => {
+      const next: Record<string, string[]> = {}
+      for (const [cardId, labelIds] of Object.entries(prev)) {
+        next[cardId] = labelIds.filter((id) => id !== labelId)
+      }
+      return next
+    })
+  }
+
+  async function handleToggleCardLabel(cardId: string, labelId: string, assign: boolean) {
+    if (assign) {
+      const { error: insertError } = await supabase
+        .from('card_labels')
+        .insert({ card_id: cardId, label_id: labelId })
+      if (insertError) {
+        setError(insertError.message)
+        return
+      }
+      setCardLabelIds((prev) => ({ ...prev, [cardId]: [...(prev[cardId] ?? []), labelId] }))
+    } else {
+      const { error: deleteError } = await supabase
+        .from('card_labels')
+        .delete()
+        .eq('card_id', cardId)
+        .eq('label_id', labelId)
+      if (deleteError) {
+        setError(deleteError.message)
+        return
+      }
+      setCardLabelIds((prev) => ({
+        ...prev,
+        [cardId]: (prev[cardId] ?? []).filter((id) => id !== labelId),
+      }))
+    }
+  }
+
+  function resolveListIdForOver(overId: string): string | null {
+    if (lists.some((l) => l.id === overId)) return overId
+    const containingList = lists.find((l) => l.cards.some((c) => c.id === overId))
+    return containingList?.id ?? null
+  }
+
+  function resolveCardDropTarget(overId: string): { listId: string; index: number } | null {
+    const asList = lists.find((l) => l.id === overId)
+    if (asList) return { listId: asList.id, index: asList.cards.length }
+    for (const list of lists) {
+      const idx = list.cards.findIndex((c) => c.id === overId)
+      if (idx !== -1) return { listId: list.id, index: idx }
+    }
+    return null
+  }
+
+  async function handleCardDragEnd(activeId: string, overId: string) {
+    const sourceListIdx = lists.findIndex((l) => l.cards.some((c) => c.id === activeId))
+    if (sourceListIdx === -1) return
+    const sourceList = lists[sourceListIdx]
+    const activeCard = sourceList.cards.find((c) => c.id === activeId)
+    if (!activeCard) return
+
+    const target = resolveCardDropTarget(overId)
+    if (!target) return
+    const destListIdx = lists.findIndex((l) => l.id === target.listId)
+    if (destListIdx === -1) return
+
+    if (destListIdx === sourceListIdx) {
+      const oldIndex = sourceList.cards.findIndex((c) => c.id === activeId)
+      const newIndex = target.index
+      if (newIndex === oldIndex) return
+
+      const reordered = arrayMove(sourceList.cards, oldIndex, newIndex)
+      const movedIndex = reordered.findIndex((c) => c.id === activeId)
+      const prevCard = reordered[movedIndex - 1]
+      const nextCard = reordered[movedIndex + 1]
+      const newPosition = computeFractionalPosition(prevCard?.position, nextCard?.position)
+      const updatedCards = reordered.map((c) => (c.id === activeId ? { ...c, position: newPosition } : c))
+
+      setLists((prev) => prev.map((l, idx) => (idx === sourceListIdx ? { ...l, cards: updatedCards } : l)))
+
+      const { error: updateError } = await supabase
+        .from('cards')
+        .update({ position: newPosition, list_id: sourceList.id })
+        .eq('id', activeId)
+      if (updateError) setError(updateError.message)
+      return
+    }
+
+    const destList = lists[destListIdx]
+    const insertIndex = Math.min(target.index, destList.cards.length)
+    const prevCard = destList.cards[insertIndex - 1]
+    const nextCard = destList.cards[insertIndex]
+    const newPosition = computeFractionalPosition(prevCard?.position, nextCard?.position)
+    const movedCard: Card = { ...activeCard, position: newPosition, list_id: destList.id }
+
+    setLists((prev) =>
+      prev.map((l, idx) => {
+        if (idx === sourceListIdx) return { ...l, cards: l.cards.filter((c) => c.id !== activeId) }
+        if (idx === destListIdx) {
+          const newCards = [...l.cards]
+          newCards.splice(insertIndex, 0, movedCard)
+          return { ...l, cards: newCards }
+        }
+        return l
+      }),
+    )
+
+    const { error: updateError } = await supabase
+      .from('cards')
+      .update({ position: newPosition, list_id: destList.id })
+      .eq('id', activeId)
+    if (updateError) setError(updateError.message)
+  }
+
+  async function handleListDragEnd(activeId: string, overId: string) {
+    const destListId = resolveListIdForOver(overId)
+    if (!destListId) return
+    const oldIndex = lists.findIndex((l) => l.id === activeId)
+    const newIndex = lists.findIndex((l) => l.id === destListId)
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
+
+    const reordered = arrayMove(lists, oldIndex, newIndex)
+    const movedIndex = reordered.findIndex((l) => l.id === activeId)
+    const prevList = reordered[movedIndex - 1]
+    const nextList = reordered[movedIndex + 1]
+    const newPosition = computeFractionalPosition(prevList?.position, nextList?.position)
+
+    setLists(reordered.map((l) => (l.id === activeId ? { ...l, position: newPosition } : l)))
+
+    const { error: updateError } = await supabase
+      .from('lists')
+      .update({ position: newPosition })
+      .eq('id', activeId)
+    if (updateError) setError(updateError.message)
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over) return
+    const activeId = String(active.id)
+    const overId = String(over.id)
+    if (activeId === overId) return
+
+    const activeType = active.data.current?.type as 'card' | 'list' | undefined
+    if (activeType === 'list') {
+      void handleListDragEnd(activeId, overId)
+    } else if (activeType === 'card') {
+      void handleCardDragEnd(activeId, overId)
+    }
   }
 
   if (loading) {
@@ -232,7 +494,7 @@ export default function BoardPage() {
           <Link to="/" className="text-sm font-medium text-white/80 hover:text-white">
             ← Boards
           </Link>
-          {editingName ? (
+          {isOwner && editingName ? (
             <>
               <label htmlFor="board-name" className="sr-only">
                 Board name
@@ -255,54 +517,104 @@ export default function BoardPage() {
             </>
           ) : (
             <h1
-              className="cursor-text rounded px-2 py-1 text-lg font-bold text-white hover:bg-white/10"
-              onClick={() => setEditingName(true)}
+              className={`rounded px-2 py-1 text-lg font-bold text-white ${
+                isOwner ? 'cursor-text hover:bg-white/10' : ''
+              }`}
+              onClick={() => {
+                if (isOwner) setEditingName(true)
+              }}
             >
               {board.name}
             </h1>
           )}
         </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowLabelsPanel(true)}
+            className="rounded bg-white/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/20"
+          >
+            Labels
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowMembersPanel(true)}
+            className="rounded bg-white/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/20"
+          >
+            Members
+          </button>
+        </div>
       </header>
 
       {error && <p className="bg-red-100 px-6 py-2 text-sm text-red-700">{error}</p>}
 
-      <div className="flex flex-1 items-start gap-4 overflow-x-auto p-4">
-        {lists.map((list) => (
-          <ListColumn
-            key={list.id}
-            list={list}
-            onRename={handleRenameList}
-            onDelete={(listId) => void handleDeleteList(listId)}
-            onAddCard={(listId, title) => void handleAddCard(listId, title)}
-            onUpdateCard={(cardId, updates) => void handleUpdateCard(cardId, updates)}
-            onDeleteCard={(cardId) => void handleDeleteCard(cardId)}
-          />
-        ))}
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+        <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
+          <div className="flex flex-1 items-start gap-4 overflow-x-auto p-4">
+            {lists.map((list) => (
+              <ListColumn
+                key={list.id}
+                list={list}
+                boardLabels={boardLabels}
+                cardLabelsByCardId={cardLabelsByCardId}
+                boardOwnerId={board.owner_id}
+                onRename={handleRenameList}
+                onDelete={(listId) => void handleDeleteList(listId)}
+                onAddCard={(listId, title) => void handleAddCard(listId, title)}
+                onUpdateCard={(cardId, updates) => void handleUpdateCard(cardId, updates)}
+                onDeleteCard={(cardId) => void handleDeleteCard(cardId)}
+                onToggleLabel={(cardId, labelId, assign) =>
+                  void handleToggleCardLabel(cardId, labelId, assign)
+                }
+              />
+            ))}
 
-        <form
-          onSubmit={handleCreateList}
-          className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-black/20 p-3"
-        >
-          <label htmlFor="new-list-name" className="sr-only">
-            New list name
-          </label>
-          <input
-            id="new-list-name"
-            type="text"
-            placeholder="Add a list"
-            value={newListName}
-            onChange={(e) => setNewListName(e.target.value)}
-            className="rounded border border-transparent bg-white/95 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-400 focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={creatingList || !newListName.trim()}
-            className="self-start rounded bg-white/90 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-white disabled:opacity-50"
-          >
-            Add list
-          </button>
-        </form>
-      </div>
+            <form
+              onSubmit={handleCreateList}
+              className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-black/20 p-3"
+            >
+              <label htmlFor="new-list-name" className="sr-only">
+                New list name
+              </label>
+              <input
+                id="new-list-name"
+                type="text"
+                placeholder="Add a list"
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                className="rounded border border-transparent bg-white/95 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-400 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={creatingList || !newListName.trim()}
+                className="self-start rounded bg-white/90 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-white disabled:opacity-50"
+              >
+                Add list
+              </button>
+            </form>
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      {showLabelsPanel && (
+        <LabelsPanel
+          labels={boardLabels}
+          onClose={() => setShowLabelsPanel(false)}
+          onCreate={(name, color) => void handleCreateLabel(name, color)}
+          onDelete={(labelId) => void handleDeleteLabel(labelId)}
+        />
+      )}
+
+      {showMembersPanel && user && (
+        <MembersPanel
+          boardId={board.id}
+          currentUserId={user.id}
+          isOwner={isOwner}
+          onClose={() => setShowMembersPanel(false)}
+          onLeave={() => navigate('/')}
+        />
+      )}
     </div>
   )
 }

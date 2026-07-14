@@ -42,3 +42,59 @@ export interface Card {
 export interface ListWithCards extends List {
   cards: Card[]
 }
+
+export interface Label {
+  id: string
+  board_id: string
+  name: string
+  color: string
+}
+
+export interface CardLabel {
+  card_id: string
+  label_id: string
+}
+
+export interface Checklist {
+  id: string
+  card_id: string
+  title: string
+  position: number
+}
+
+export interface ChecklistItem {
+  id: string
+  checklist_id: string
+  text: string
+  is_complete: boolean
+  position: number
+}
+
+export interface ChecklistWithItems extends Checklist {
+  items: ChecklistItem[]
+}
+
+export interface Comment {
+  id: string
+  card_id: string
+  author_id: string
+  body: string
+  created_at: string
+}
+
+export interface CommentWithAuthor extends Comment {
+  profiles: { username: string | null } | null
+}
+
+export type BoardRole = 'owner' | 'member'
+
+export interface BoardMember {
+  board_id: string
+  user_id: string
+  role: BoardRole
+  created_at: string
+}
+
+export interface BoardMemberWithProfile extends BoardMember {
+  profiles: { username: string | null } | null
+}
