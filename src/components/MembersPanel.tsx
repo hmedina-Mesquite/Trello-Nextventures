@@ -51,36 +51,32 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
 
   async function handleInvite(e: FormEvent) {
     e.preventDefault()
-    const username = inviteUsername.trim()
-    if (!username) return
+    const identifier = inviteUsername.trim()
+    if (!identifier) return
     setInviting(true)
     setError(null)
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, username')
-      .eq('username', username)
-      .maybeSingle()
-
-    if (profileError || !profile) {
-      setError(`No se encontró ningún usuario con el nombre de usuario "${username}"`)
-      setInviting(false)
-      return
-    }
-
-    const { data, error: insertError } = await supabase
-      .from('board_members')
-      .insert({ board_id: boardId, user_id: profile.id, role: 'member' })
-      .select('*, profiles(username)')
+    const { data, error: rpcError } = await supabase
+      .rpc('invite_board_member', { p_board_id: boardId, p_identifier: identifier })
       .single()
 
     setInviting(false)
-    if (insertError) {
-      setError(insertError.message)
+    if (rpcError || !data) {
+      setError(rpcError?.message ?? 'No se pudo invitar a ese usuario.')
       return
     }
 
-    setMembers((prev) => [...prev, data as BoardMemberWithProfile])
+    const invited = data as { user_id: string; username: string | null; role: BoardRole }
+    setMembers((prev) => [
+      ...prev,
+      {
+        board_id: boardId,
+        user_id: invited.user_id,
+        role: invited.role,
+        created_at: new Date().toISOString(),
+        profiles: { username: invited.username },
+      } as BoardMemberWithProfile,
+    ])
     setInviteUsername('')
   }
 
@@ -210,7 +206,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
         {isOwner && (
           <form onSubmit={handleInvite} className="flex flex-col gap-2 border-t border-gray-200 pt-3">
             <label htmlFor="invite-username" className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Invitar por nombre de usuario
+              Invitar por nombre de usuario o correo
             </label>
             <div className="flex gap-2">
               <input
@@ -218,7 +214,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                 type="text"
                 value={inviteUsername}
                 onChange={(e) => setInviteUsername(e.target.value)}
-                placeholder="nombre de usuario"
+                placeholder="nombre de usuario o correo"
                 className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
               />
               <button

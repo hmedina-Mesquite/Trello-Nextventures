@@ -16,6 +16,7 @@ export interface Board {
   name: string
   owner_id: string
   background_color: string
+  background_image_path: string | null
   created_at: string
   updated_at: string
 }
@@ -84,6 +85,19 @@ export interface Comment {
 
 export interface CommentWithAuthor extends Comment {
   profiles: { username: string | null } | null
+}
+
+export interface Attachment {
+  id: string
+  card_id: string
+  user_id: string
+  file_name: string
+  file_type: string | null
+  storage_path: string | null
+  url: string | null
+  size: number | null
+  position: number
+  created_at: string
 }
 
 export type BoardRole = 'owner' | 'member'

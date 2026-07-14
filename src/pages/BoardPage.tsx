@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { CSSProperties, FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   DndContext,
@@ -16,6 +16,7 @@ import type { Board, BoardRole, Card, Label, List, ListWithCards } from '../type
 import { ListColumn } from '../components/ListColumn'
 import { LabelsPanel } from '../components/LabelsPanel'
 import { MembersPanel } from '../components/MembersPanel'
+import { BackgroundPanel } from '../components/BackgroundPanel'
 
 function computeFractionalPosition(prev: number | undefined, next: number | undefined): number {
   if (prev === undefined && next === undefined) return 1
@@ -41,6 +42,8 @@ export default function BoardPage() {
   const [creatingList, setCreatingList] = useState(false)
   const [showLabelsPanel, setShowLabelsPanel] = useState(false)
   const [showMembersPanel, setShowMembersPanel] = useState(false)
+  const [showBackgroundPanel, setShowBackgroundPanel] = useState(false)
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const isOwner = currentRole === 'owner'
@@ -174,6 +177,33 @@ export default function BoardPage() {
     }
   }, [boardId, user])
 
+  useEffect(() => {
+    const path = board?.background_image_path
+    if (!path) {
+      setBackgroundImageUrl(null)
+      return
+    }
+    let cancelled = false
+
+    async function loadSignedUrl() {
+      const { data, error: signedUrlError } = await supabase.storage
+        .from('board-backgrounds')
+        .createSignedUrl(path!, 3600)
+
+      if (cancelled) return
+      if (signedUrlError || !data) {
+        setBackgroundImageUrl(null)
+        return
+      }
+      setBackgroundImageUrl(data.signedUrl)
+    }
+
+    void loadSignedUrl()
+    return () => {
+      cancelled = true
+    }
+  }, [board?.background_image_path])
+
   async function handleRenameBoard() {
     if (!board) return
     setEditingName(false)
@@ -191,6 +221,12 @@ export default function BoardPage() {
       return
     }
     setBoard({ ...board, name: trimmed })
+  }
+
+  function handleBackgroundChange(
+    updates: Partial<Pick<Board, 'background_color' | 'background_image_path'>>,
+  ) {
+    setBoard((prev) => (prev ? { ...prev, ...updates } : prev))
   }
 
   async function handleCreateList(e: FormEvent) {
@@ -487,8 +523,17 @@ export default function BoardPage() {
     )
   }
 
+  const backgroundStyle: CSSProperties = board.background_image_path
+    ? {
+        backgroundColor: board.background_color,
+        backgroundImage: backgroundImageUrl ? `url(${backgroundImageUrl})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }
+    : { backgroundColor: board.background_color }
+
   return (
-    <div className="flex min-h-screen flex-col" style={{ backgroundColor: board.background_color }}>
+    <div className="flex min-h-screen flex-col" style={backgroundStyle}>
       <header className="flex items-center justify-between gap-4 bg-black/20 px-6 py-4">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-sm font-medium text-white/80 hover:text-white">
@@ -544,6 +589,15 @@ export default function BoardPage() {
           >
             Miembros
           </button>
+          {isOwner && (
+            <button
+              type="button"
+              onClick={() => setShowBackgroundPanel(true)}
+              className="rounded bg-white/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/20"
+            >
+              Fondo
+            </button>
+          )}
         </div>
       </header>
 
@@ -613,6 +667,14 @@ export default function BoardPage() {
           isOwner={isOwner}
           onClose={() => setShowMembersPanel(false)}
           onLeave={() => navigate('/')}
+        />
+      )}
+
+      {showBackgroundPanel && isOwner && (
+        <BackgroundPanel
+          board={board}
+          onClose={() => setShowBackgroundPanel(false)}
+          onBackgroundChange={handleBackgroundChange}
         />
       )}
     </div>

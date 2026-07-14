@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import type {
+  Attachment,
   Card,
   Checklist,
   ChecklistItem,
@@ -11,6 +12,14 @@ import type {
   CommentWithAuthor,
   Label,
 } from '../types'
+
+const ATTACHMENTS_BUCKET = 'card-attachments'
+
+function formatFileSize(bytes: number | null): string {
+  if (bytes === null) return ''
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 interface CardDetailModalProps {
   card: Card
@@ -46,6 +55,12 @@ export function CardDetailModal({
   const [comments, setComments] = useState<CommentWithAuthor[]>([])
   const [commentsLoading, setCommentsLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
+
+  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [attachmentsLoading, setAttachmentsLoading] = useState(true)
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const [newLinkName, setNewLinkName] = useState('')
+  const [newLinkUrl, setNewLinkUrl] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -109,8 +124,27 @@ export function CardDetailModal({
       setCommentsLoading(false)
     }
 
+    async function loadAttachments() {
+      setAttachmentsLoading(true)
+      const { data, error: attachmentsError } = await supabase
+        .from('attachments')
+        .select('*')
+        .eq('card_id', card.id)
+        .order('created_at', { ascending: true })
+
+      if (cancelled) return
+      if (attachmentsError) {
+        setModalError(attachmentsError.message)
+        setAttachmentsLoading(false)
+        return
+      }
+      setAttachments((data ?? []) as Attachment[])
+      setAttachmentsLoading(false)
+    }
+
     void loadChecklists()
     void loadComments()
+    void loadAttachments()
     return () => {
       cancelled = true
     }
@@ -265,6 +299,94 @@ export function CardDetailModal({
   function canDeleteComment(comment: Comment): boolean {
     if (!user) return false
     return comment.author_id === user.id || user.id === boardOwnerId
+  }
+
+  async function handleFileSelected(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !user) return
+
+    setUploadingFile(true)
+    const path = `${card.id}/${crypto.randomUUID()}-${file.name}`
+
+    const { error: uploadError } = await supabase.storage.from(ATTACHMENTS_BUCKET).upload(path, file)
+    if (uploadError) {
+      setModalError(uploadError.message)
+      setUploadingFile(false)
+      return
+    }
+
+    const { data, error: insertError } = await supabase
+      .from('attachments')
+      .insert({
+        card_id: card.id,
+        user_id: user.id,
+        file_name: file.name,
+        file_type: file.type || null,
+        storage_path: path,
+        size: file.size,
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      setModalError(insertError.message)
+      setUploadingFile(false)
+      return
+    }
+    setAttachments((prev) => [...prev, data as Attachment])
+    setUploadingFile(false)
+  }
+
+  async function handleAddLink(e: FormEvent) {
+    e.preventDefault()
+    const rawUrl = newLinkUrl.trim()
+    if (!rawUrl || !user) return
+    const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`
+    const fileName = newLinkName.trim() || rawUrl
+
+    const { data, error: insertError } = await supabase
+      .from('attachments')
+      .insert({ card_id: card.id, user_id: user.id, file_name: fileName, url })
+      .select()
+      .single()
+
+    if (insertError) {
+      setModalError(insertError.message)
+      return
+    }
+    setAttachments((prev) => [...prev, data as Attachment])
+    setNewLinkName('')
+    setNewLinkUrl('')
+  }
+
+  async function handleOpenFileAttachment(storagePath: string) {
+    const { data, error: signedUrlError } = await supabase.storage
+      .from(ATTACHMENTS_BUCKET)
+      .createSignedUrl(storagePath, 60)
+    if (signedUrlError) {
+      setModalError(signedUrlError.message)
+      return
+    }
+    window.open(data.signedUrl, '_blank')
+  }
+
+  async function handleDeleteAttachment(attachment: Attachment) {
+    if (!window.confirm('¿Eliminar este archivo adjunto?')) return
+    if (attachment.storage_path) {
+      await supabase.storage.from(ATTACHMENTS_BUCKET).remove([attachment.storage_path])
+    }
+    const { error: deleteError } = await supabase.from('attachments').delete().eq('id', attachment.id)
+    if (deleteError) {
+      setModalError(deleteError.message)
+      return
+    }
+    setAttachments((prev) => prev.filter((a) => a.id !== attachment.id))
+  }
+
+  function canDeleteAttachment(attachment: Attachment): boolean {
+    if (!user) return false
+    return attachment.user_id === user.id || user.id === boardOwnerId
   }
 
   return (
@@ -466,6 +588,116 @@ export function CardDetailModal({
               </form>
             </div>
           )}
+        </div>
+
+        {/* Attachments */}
+        <div className="mb-4">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Archivos adjuntos</h3>
+          {attachmentsLoading ? (
+            <p className="text-sm text-gray-500">Cargando archivos adjuntos…</p>
+          ) : (
+            <div className="mb-2 flex flex-col gap-2">
+              {attachments.length === 0 && (
+                <p className="text-sm text-gray-500">Aún no hay archivos adjuntos.</p>
+              )}
+              {attachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="flex items-center justify-between gap-2 rounded bg-gray-50 p-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    {attachment.url ? (
+                      <a
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block truncate text-sm font-medium text-blue-600 hover:underline"
+                      >
+                        {attachment.file_name}
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          attachment.storage_path && void handleOpenFileAttachment(attachment.storage_path)
+                        }
+                        className="block truncate text-left text-sm font-medium text-blue-600 hover:underline"
+                      >
+                        {attachment.file_name}
+                      </button>
+                    )}
+                    {!attachment.url && (
+                      <span className="text-xs text-gray-500">
+                        {attachment.file_type ?? 'archivo'}
+                        {attachment.size !== null ? ` · ${formatFileSize(attachment.size)}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  {canDeleteAttachment(attachment) && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteAttachment(attachment)}
+                      className="shrink-0 rounded px-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-700"
+                      aria-label={`Eliminar archivo adjunto ${attachment.file_name}`}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="new-attachment-file"
+                className="cursor-pointer rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
+              >
+                Subir archivo
+              </label>
+              <input
+                id="new-attachment-file"
+                type="file"
+                onChange={(e) => void handleFileSelected(e)}
+                disabled={uploadingFile}
+                className="sr-only"
+              />
+              {uploadingFile && <span className="text-xs text-gray-500">Subiendo…</span>}
+            </div>
+
+            <form onSubmit={handleAddLink} className="flex gap-2">
+              <label htmlFor="new-attachment-name" className="sr-only">
+                Nombre del enlace (opcional)
+              </label>
+              <input
+                id="new-attachment-name"
+                type="text"
+                value={newLinkName}
+                onChange={(e) => setNewLinkName(e.target.value)}
+                placeholder="Nombre (opcional)"
+                className="w-32 rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
+              />
+              <label htmlFor="new-attachment-url" className="sr-only">
+                URL del enlace
+              </label>
+              <input
+                id="new-attachment-url"
+                type="text"
+                value={newLinkUrl}
+                onChange={(e) => setNewLinkUrl(e.target.value)}
+                placeholder="Pega un enlace…"
+                className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!newLinkUrl.trim()}
+                className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                Agregar enlace
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Comments */}
