@@ -5,7 +5,7 @@ dist/
 .DS_Store
 .task-claims/
 .tasklock/
-.claude/agent-memory/
+.claude/
 supabase/.branches
 supabase/.temp
 test-results/
