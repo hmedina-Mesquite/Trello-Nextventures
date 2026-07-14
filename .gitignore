@@ -5,5 +5,10 @@ dist/
 .DS_Store
 .task-claims/
 .tasklock/
+.claude/agent-memory/
 supabase/.branches
 supabase/.temp
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

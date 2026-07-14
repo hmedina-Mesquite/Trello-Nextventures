@@ -6,20 +6,16 @@
 
 - **T002** | Set up Supabase project and install CLI locally | Backend-Developer | Depends on T001 | **STILL BLOCKED** (retried after user paused Orion Capital and resumed WhatsApp Test XCIEN): Supabase now reports org member "desarrolloapp-boop" (co-admin of hmedina-Mesquite's Org, not an account we have visibility into) is at their 2-free-project cap somewhere outside this org — unaffected by which of our own projects are active/paused. User is resolving directly with Supabase or that account holder. Local CLI is installed, `supabase init` done, migrations for T004-T011 ready to apply the moment a project exists.
 
-### Phase 8: Collaboration & Permissions
-
-- **T028** | Test end-to-end permission scenarios (member vs owner behavior) | Tester | Depends on T027, all UI features complete
-
 ### Phase 9: Validation & Testing
 
-- **T029** | Create and run end-to-end tests for critical user flows | Tester | Depends on T028
-- **T030** | Verify all RLS policies work correctly in production data | Tester | Depends on T011, T028
-
-### Phase 10: Deployment (Lower Priority)
-
-- **T031** | Set up basic deployment configuration (Vercel or similar) | DevOps | Depends on T030
+- **T028** | Test end-to-end permission scenarios (member vs owner behavior) | Tester | Written (tests/e2e/permissions.spec.ts), **not yet run**. Blocked on two things: (1) T002 — no live Supabase project; (2) `npm install` to actually add @playwright/test to node_modules is held by this environment's own dependency-install guardrail — package.json already lists it as a devDependency, user needs to run `npm install` themselves (or `npx playwright install --with-deps chromium` after) to unblock, per `~/.claude/pending-approval/*-blocked.md`.
+- **T029** | Create and run end-to-end tests for critical user flows | Tester | Written (tests/e2e/auth.spec.ts, tests/e2e/board-flow.spec.ts), same two blockers as T028.
+- **T030** | Verify all RLS policies work correctly in production data | Tester | Direct-query test written (tests/e2e/rls/rls-direct-query.spec.ts, bypasses the UI entirely — two supabase-js clients, asserts a non-member's writes affect zero rows), same two blockers as T028. tests/e2e/rls/README.md explains why T027's UI-hiding isn't itself proof of RLS.
+  - One thing was verified without Supabase or Playwright: dev server boots, `/` and `/boards/:id` correctly redirect to `/login` when logged out, `/signup` renders directly.
 
 ## Done
+
+- **T031** | Set up basic deployment configuration (Vercel or similar) | vercel.json SPA rewrite (client-side routes 404 on refresh without it) + README deployment section (env vars, build command). Actual deploy not performed — lower priority per goal.md, and pushing to a live Vercel project is a separate action to confirm when the app is ready to go live.
 
 - **T001** | Initialize git repo, package.json, and project structure | Vite+React+TS scaffold via `npm create vite`, Tailwind v4 wired into vite.config.ts, deps installed (@supabase/supabase-js, react-router-dom, @dnd-kit/*). package.json renamed to "trello-clone".
 - **T003** | Set up frontend framework (React + build tools) | Covered by the Vite scaffold above; folder structure (src/lib, src/contexts, src/pages, src/components, src/hooks) created.
