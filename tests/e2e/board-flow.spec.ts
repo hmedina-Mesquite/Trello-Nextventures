@@ -58,10 +58,13 @@ test.describe('critical user flow', () => {
 
     await test.step('open a card and edit its title and description', async () => {
       await openCard(page, 'To Do', 'Card A')
-      const titleInput = page.getByLabel('Card title')
+      const titleInput = page.getByLabel('Título de la tarjeta')
       await titleInput.fill('Card A edited')
       await titleInput.blur()
-      const descriptionInput = page.getByLabel('Description')
+      // Description starts as a click-to-edit div (CardDetailModal.tsx); the
+      // textarea (and its label association) only exists once clicked into.
+      await page.getByText('Agrega una descripción más detallada…').click()
+      const descriptionInput = page.getByLabel('Descripción')
       await descriptionInput.fill('A description added during the e2e flow test.')
       await descriptionInput.blur()
       await closeCardModal(page)
@@ -84,11 +87,12 @@ test.describe('critical user flow', () => {
 
     await test.step('create a label and assign it to a card', async () => {
       await openLabelsPanel(page)
-      await page.getByLabel('Label name').fill('Bug')
-      await page.getByRole('button', { name: 'Choose color green' }).click()
-      await page.getByRole('button', { name: 'Add label' }).click()
+      await page.getByLabel('Nueva etiqueta').fill('Bug')
+      // exact: true -- "verde" is a substring of the "verde lima" swatch's name.
+      await page.getByRole('button', { name: 'Elegir color verde', exact: true }).click()
+      await page.getByRole('button', { name: 'Agregar etiqueta' }).click()
       await expect(page.getByText('Bug', { exact: true })).toBeVisible()
-      await page.getByRole('button', { name: 'Close' }).click()
+      await page.getByRole('button', { name: 'Cerrar' }).click()
 
       await openCard(page, 'Doing', 'Card A edited')
       await page.getByRole('button', { name: 'Bug' }).click() // toggles assignment on
@@ -98,46 +102,52 @@ test.describe('critical user flow', () => {
 
     await test.step('add a checklist with items and toggle completion', async () => {
       await openCard(page, 'Doing', 'Card A edited')
-      await page.getByLabel('New checklist title').fill('Checklist 1')
-      await page.getByRole('button', { name: 'Add checklist' }).click()
+      await page.getByLabel('Título de la nueva lista de verificación').fill('Checklist 1')
+      await page.getByRole('button', { name: 'Agregar lista de verificación' }).click()
 
-      await page.getByPlaceholder('Add an item').fill('Item A')
-      await page.getByRole('button', { name: 'Add', exact: true }).click()
-      await page.getByPlaceholder('Add an item').fill('Item B')
-      await page.getByRole('button', { name: 'Add', exact: true }).click()
+      await page.getByPlaceholder('Agregar un elemento').fill('Item A')
+      await page.getByRole('button', { name: 'Agregar', exact: true }).click()
+      await page.getByPlaceholder('Agregar un elemento').fill('Item B')
+      await page.getByRole('button', { name: 'Agregar', exact: true }).click()
 
       await expect(page.getByText('0/2', { exact: true })).toBeVisible()
-      await page.getByLabel('Item A', { exact: true }).check()
+      // click() + toBeChecked() rather than check(): CardDetailModal's
+      // checkbox only flips after its Supabase update round-trips (see
+      // handleToggleItem), and check()'s post-click verification is a single
+      // immediate check, not a poll -- toBeChecked() retries until it settles.
+      const itemACheckbox = page.getByLabel('Item A', { exact: true })
+      await itemACheckbox.click()
+      await expect(itemACheckbox).toBeChecked()
       await expect(page.getByText('1/2', { exact: true })).toBeVisible()
     })
 
     await test.step('add and then delete a comment', async () => {
-      await page.getByLabel('Add a comment').fill('Nice card!')
-      await page.getByRole('button', { name: 'Comment' }).click()
+      await page.getByLabel('Agregar un comentario').fill('Nice card!')
+      await page.getByRole('button', { name: 'Comentar' }).click()
       await expect(page.getByText('Nice card!')).toBeVisible()
 
-      await page.getByRole('button', { name: 'Delete comment' }).click()
+      await page.getByRole('button', { name: 'Eliminar comentario' }).click()
       await expect(page.getByText('Nice card!')).toHaveCount(0)
       await closeCardModal(page)
     })
 
     await test.step('delete the card', async () => {
       await openCard(page, 'Doing', 'Card A edited')
-      await page.getByRole('button', { name: 'Delete card' }).click()
+      await page.getByRole('button', { name: 'Eliminar tarjeta' }).click()
       await expect(cardItem(page, 'Doing', 'Card A edited')).toHaveCount(0)
     })
 
     await test.step('delete both lists', async () => {
-      await listColumn(page, 'To Do').getByRole('button', { name: 'Delete list To Do' }).click()
+      await listColumn(page, 'To Do').getByRole('button', { name: 'Eliminar lista To Do' }).click()
       await expect(listColumn(page, 'To Do')).toHaveCount(0)
-      await listColumn(page, 'Doing').getByRole('button', { name: 'Delete list Doing' }).click()
+      await listColumn(page, 'Doing').getByRole('button', { name: 'Eliminar lista Doing' }).click()
       await expect(listColumn(page, 'Doing')).toHaveCount(0)
     })
 
     await test.step('delete the board', async () => {
       await page.goto('/')
       await page.getByRole('link', { name: boardName }).hover()
-      await page.getByRole('button', { name: `Delete board ${boardName}` }).click()
+      await page.getByRole('button', { name: `Eliminar tablero ${boardName}` }).click()
       await expect(page.getByRole('link', { name: boardName })).toHaveCount(0)
     })
   })

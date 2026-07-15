@@ -38,12 +38,12 @@ test.describe('auth', () => {
   test('logging in with a wrong password shows an error and does not navigate', async ({ page }) => {
     const user = makeTestUser('wrongpw')
     await signUp(page, user)
-    await page.getByRole('button', { name: 'Sign out' }).click()
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click()
 
     await page.goto('/login')
-    await page.getByLabel('Email').fill(user.email)
-    await page.getByLabel('Password').fill('definitely-not-the-password')
-    await page.getByRole('button', { name: 'Log in' }).click()
+    await page.getByLabel('Correo electrónico').fill(user.email)
+    await page.getByLabel('Contraseña').fill('definitely-not-the-password')
+    await page.getByRole('button', { name: 'Iniciar sesión' }).click()
 
     await expect(page).toHaveURL(/\/login$/)
     // LoginPage renders the Supabase error message text (src/pages/LoginPage.tsx);

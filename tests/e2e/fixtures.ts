@@ -19,7 +19,11 @@ export function makeTestUser(label = 'user'): TestUser {
     // profiles.username presumably has a uniqueness/format constraint (see
     // supabase/migrations) -- keep it short, lowercase-friendly, no spaces.
     username: `${label}_${unique}`.toLowerCase().slice(0, 32),
-    email: `${label}.${unique}@example.test`,
+    // Domain must be on the allowlist enforced both client-side
+    // (SignupPage.tsx) and in the DB trigger (see
+    // supabase/migrations/20260714120009_email_domain_allowlist.sql) -- any
+    // other domain gets rejected before a session is ever created.
+    email: `${label}.${unique}@nextventures.mx`,
     password: 'TestPass123!',
   }
 }
@@ -36,34 +40,34 @@ export function makeTestUser(label = 'user'): TestUser {
  */
 export async function signUp(page: Page, user: TestUser) {
   await page.goto('/signup')
-  await page.getByLabel('Username').fill(user.username)
-  await page.getByLabel('Email').fill(user.email)
-  await page.getByLabel('Password').fill(user.password)
-  await page.getByRole('button', { name: 'Sign up' }).click()
+  await page.getByLabel('Nombre de usuario').fill(user.username)
+  await page.getByLabel('Correo electrónico').fill(user.email)
+  await page.getByLabel('Contraseña').fill(user.password)
+  await page.getByRole('button', { name: 'Registrarse' }).click()
   await expect(
-    page.getByRole('heading', { name: 'Your boards' }),
+    page.getByRole('heading', { name: 'Tus tableros' }),
     'expected redirect to the dashboard after signup -- if this fails, check whether the Supabase project requires email confirmation (SignupPage shows an info message instead of navigating in that case)',
   ).toBeVisible()
 }
 
 export async function login(page: Page, user: Pick<TestUser, 'email' | 'password'>) {
   await page.goto('/login')
-  await page.getByLabel('Email').fill(user.email)
-  await page.getByLabel('Password').fill(user.password)
-  await page.getByRole('button', { name: 'Log in' }).click()
-  await expect(page.getByRole('heading', { name: 'Your boards' })).toBeVisible()
+  await page.getByLabel('Correo electrónico').fill(user.email)
+  await page.getByLabel('Contraseña').fill(user.password)
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+  await expect(page.getByRole('heading', { name: 'Tus tableros' })).toBeVisible()
 }
 
 export async function logout(page: Page) {
-  await page.getByRole('button', { name: 'Sign out' }).click()
+  await page.getByRole('button', { name: 'Cerrar sesión' }).click()
   await expect(page).toHaveURL(/\/login$/)
 }
 
 /** From the dashboard: creates a board, follows the app's redirect into it, and returns its id. */
 export async function createBoard(page: Page, name: string): Promise<string> {
-  await page.getByRole('button', { name: '+ Create new board' }).click()
-  await page.getByLabel('Board name').fill(name)
-  await page.getByRole('button', { name: 'Create' }).click()
+  await page.getByRole('button', { name: '+ Crear nuevo tablero' }).click()
+  await page.getByLabel('Nombre del tablero').fill(name)
+  await page.getByRole('button', { name: 'Crear' }).click()
   await expect(page).toHaveURL(/\/boards\/[^/]+$/)
   await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()
   return page.url().split('/boards/')[1]
@@ -78,8 +82,8 @@ export function listColumn(page: Page, listName: string): Locator {
 }
 
 export async function addList(page: Page, listName: string) {
-  await page.getByLabel('New list name').fill(listName)
-  await page.getByRole('button', { name: 'Add list' }).click()
+  await page.getByLabel('Nombre de la nueva lista').fill(listName)
+  await page.getByRole('button', { name: 'Agregar lista' }).click()
   await expect(listColumn(page, listName)).toBeVisible()
 }
 
@@ -96,38 +100,43 @@ function escapeRegExp(value: string): string {
  * into its ancestor's aggregate name, which would make an exact accessible-
  * name match brittle after the "assign a label" step. textContent is
  * unaffected by `title` attributes, so it stays exact.
+ *
+ * The button also renders a trailing "created at" timestamp (see
+ * `card.created_at` in CardItem.tsx) directly after the title, so the regex
+ * allows an optional `\s*\d.*` tail for that timestamp instead of anchoring
+ * on the title alone -- otherwise it'd never match any card.
  */
 export function cardItem(page: Page, listName: string, cardTitle: string): Locator {
   return listColumn(page, listName)
     .getByRole('button')
-    .filter({ hasText: new RegExp(`^${escapeRegExp(cardTitle)}$`) })
+    .filter({ hasText: new RegExp(`^${escapeRegExp(cardTitle)}(\\s*\\d.*)?$`) })
 }
 
 export async function addCard(page: Page, listName: string, cardTitle: string) {
   const column = listColumn(page, listName)
-  await column.getByRole('button', { name: '+ Add a card' }).click()
-  await column.getByPlaceholder('Enter a title for this card').fill(cardTitle)
-  await column.getByRole('button', { name: 'Add card' }).click()
+  await column.getByRole('button', { name: '+ Agregar una tarjeta' }).click()
+  await column.getByPlaceholder('Escribe un título para esta tarjeta').fill(cardTitle)
+  await column.getByRole('button', { name: 'Agregar tarjeta' }).click()
   await expect(cardItem(page, listName, cardTitle)).toBeVisible()
 }
 
 export async function openCard(page: Page, listName: string, cardTitle: string) {
   await cardItem(page, listName, cardTitle).click()
-  await expect(page.getByLabel('Card title')).toBeVisible()
+  await expect(page.getByLabel('Título de la tarjeta')).toBeVisible()
 }
 
 export async function closeCardModal(page: Page) {
-  await page.getByRole('button', { name: 'Close' }).click()
+  await page.getByRole('button', { name: 'Cerrar' }).click()
 }
 
 export async function openLabelsPanel(page: Page) {
-  await page.getByRole('button', { name: 'Labels' }).click()
-  await expect(page.getByRole('heading', { name: 'Labels' })).toBeVisible()
+  await page.getByRole('button', { name: 'Etiquetas' }).click()
+  await expect(page.getByRole('heading', { name: 'Etiquetas' })).toBeVisible()
 }
 
 export async function openMembersPanel(page: Page) {
-  await page.getByRole('button', { name: 'Members' }).click()
-  await expect(page.getByRole('heading', { name: 'Members' })).toBeVisible()
+  await page.getByRole('button', { name: 'Miembros' }).click()
+  await expect(page.getByRole('heading', { name: 'Miembros' })).toBeVisible()
 }
 
 /**

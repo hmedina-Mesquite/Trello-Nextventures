@@ -60,15 +60,15 @@ test.describe('owner vs member permissions', () => {
 
       await test.step('owner invites user B by username via MembersPanel', async () => {
         await openMembersPanel(ownerPage)
-        await ownerPage.getByLabel('Invite by username').fill(member.username)
-        await ownerPage.getByRole('button', { name: 'Invite' }).click()
+        await ownerPage.getByLabel('Invitar por nombre de usuario o correo').fill(member.username)
+        await ownerPage.getByRole('button', { name: 'Invitar' }).click()
         await expect(ownerPage.getByText(member.username, { exact: true })).toBeVisible()
         // The new row is a plain member by default (no role-change UI needed
         // to prove this -- MembersPanel renders the role as plain text next
         // to their own row, and as a <select> defaulting to "member" in the
         // owner's row for that user).
-        await expect(ownerPage.getByLabel(`Role for ${member.username}`)).toHaveValue('member')
-        await ownerPage.getByRole('button', { name: 'Close' }).click()
+        await expect(ownerPage.getByLabel(`Rol de ${member.username}`)).toHaveValue('member')
+        await ownerPage.getByRole('button', { name: 'Cerrar' }).click()
       })
 
       await test.step('member opens the board and can create/edit/delete lists and cards', async () => {
@@ -79,7 +79,7 @@ test.describe('owner vs member permissions', () => {
         await addCard(memberPage, 'Member List', 'Member Card')
 
         await openCard(memberPage, 'Member List', 'Member Card')
-        const titleInput = memberPage.getByLabel('Card title')
+        const titleInput = memberPage.getByLabel('Título de la tarjeta')
         await titleInput.fill('Member Card edited')
         await titleInput.blur()
         await closeCardModal(memberPage)
@@ -88,33 +88,42 @@ test.describe('owner vs member permissions', () => {
 
       await test.step('member can create labels and assign them', async () => {
         await openLabelsPanel(memberPage)
-        await memberPage.getByLabel('Label name').fill('Member Label')
-        await memberPage.getByRole('button', { name: 'Choose color blue' }).click()
-        await memberPage.getByRole('button', { name: 'Add label' }).click()
+        await memberPage.getByLabel('Nueva etiqueta').fill('Member Label')
+        await memberPage.getByRole('button', { name: 'Elegir color azul' }).click()
+        await memberPage.getByRole('button', { name: 'Agregar etiqueta' }).click()
         await expect(memberPage.getByText('Member Label', { exact: true })).toBeVisible()
-        await memberPage.getByRole('button', { name: 'Close' }).click()
+        await memberPage.getByRole('button', { name: 'Cerrar' }).click()
 
         await openCard(memberPage, 'Member List', 'Member Card edited')
-        await memberPage.getByRole('button', { name: 'Member Label' }).click()
+        await memberPage.getByRole('button', { name: 'Member Label', exact: true }).click()
+        // exact: true -- once assigned, the underlying CardItem's label pill
+        // (a childless <span title="Member Label">) folds that title into
+        // the card button's own accessible name too (see cardItem()'s doc
+        // comment in fixtures.ts), so a non-exact match becomes ambiguous.
         await expect(
-          memberPage.getByRole('button', { name: 'Member Label' }),
+          memberPage.getByRole('button', { name: 'Member Label', exact: true }),
         ).toHaveAttribute('aria-pressed', 'true')
         await closeCardModal(memberPage)
       })
 
       await test.step('member can add a checklist and toggle items, and add/delete a comment', async () => {
         await openCard(memberPage, 'Member List', 'Member Card edited')
-        await memberPage.getByLabel('New checklist title').fill('Member Checklist')
-        await memberPage.getByRole('button', { name: 'Add checklist' }).click()
-        await memberPage.getByPlaceholder('Add an item').fill('Member Item')
-        await memberPage.getByRole('button', { name: 'Add', exact: true }).click()
-        await memberPage.getByLabel('Member Item', { exact: true }).check()
+        await memberPage.getByLabel('Título de la nueva lista de verificación').fill('Member Checklist')
+        await memberPage.getByRole('button', { name: 'Agregar lista de verificación' }).click()
+        await memberPage.getByPlaceholder('Agregar un elemento').fill('Member Item')
+        await memberPage.getByRole('button', { name: 'Agregar', exact: true }).click()
+        // click() + toBeChecked() rather than check(): the checkbox only
+        // flips after its Supabase update round-trips (see fixtures.ts's
+        // board-flow equivalent for the full explanation).
+        const memberItemCheckbox = memberPage.getByLabel('Member Item', { exact: true })
+        await memberItemCheckbox.click()
+        await expect(memberItemCheckbox).toBeChecked()
         await expect(memberPage.getByText('1/1', { exact: true })).toBeVisible()
 
-        await memberPage.getByLabel('Add a comment').fill('A member comment')
-        await memberPage.getByRole('button', { name: 'Comment' }).click()
+        await memberPage.getByLabel('Agregar un comentario').fill('A member comment')
+        await memberPage.getByRole('button', { name: 'Comentar' }).click()
         await expect(memberPage.getByText('A member comment')).toBeVisible()
-        await memberPage.getByRole('button', { name: 'Delete comment' }).click()
+        await memberPage.getByRole('button', { name: 'Eliminar comentario' }).click()
         await expect(memberPage.getByText('A member comment')).toHaveCount(0)
         await closeCardModal(memberPage)
       })
@@ -124,24 +133,24 @@ test.describe('owner vs member permissions', () => {
         await heading.click()
         // BoardPage only swaps the <h1> for an <input id="board-name"> when
         // isOwner is true; for a member the click is a no-op.
-        await expect(memberPage.getByLabel('Board name')).toHaveCount(0)
+        await expect(memberPage.getByLabel('Nombre del tablero')).toHaveCount(0)
         await expect(heading).toBeVisible()
       })
 
       await test.step('member CANNOT see owner-only MembersPanel controls', async () => {
         await openMembersPanel(memberPage)
-        await expect(memberPage.getByLabel('Invite by username')).toHaveCount(0)
-        await expect(memberPage.getByLabel(`Role for ${owner.username}`)).toHaveCount(0)
-        await expect(memberPage.getByRole('button', { name: 'Remove' })).toHaveCount(0)
+        await expect(memberPage.getByLabel('Invitar por nombre de usuario o correo')).toHaveCount(0)
+        await expect(memberPage.getByLabel(`Rol de ${owner.username}`)).toHaveCount(0)
+        await expect(memberPage.getByRole('button', { name: 'Quitar' })).toHaveCount(0)
         // but they DO see their own self-service leave control
-        await expect(memberPage.getByRole('button', { name: 'Leave board' })).toBeVisible()
-        await memberPage.getByRole('button', { name: 'Close' }).click()
+        await expect(memberPage.getByRole('button', { name: 'Salir del tablero' })).toBeVisible()
+        await memberPage.getByRole('button', { name: 'Cerrar' }).click()
       })
 
       await test.step('owner retains board rename and MembersPanel management controls', async () => {
         const heading = ownerPage.getByRole('heading', { name: boardName, level: 1 })
         await heading.click()
-        const renameInput = ownerPage.getByLabel('Board name')
+        const renameInput = ownerPage.getByLabel('Nombre del tablero')
         await expect(renameInput).toBeVisible()
         const renamed = `${boardName} (renamed)`
         await renameInput.fill(renamed)
@@ -149,15 +158,15 @@ test.describe('owner vs member permissions', () => {
         await expect(ownerPage.getByRole('heading', { name: renamed, level: 1 })).toBeVisible()
 
         await openMembersPanel(ownerPage)
-        await expect(ownerPage.getByLabel('Invite by username')).toBeVisible()
-        await expect(ownerPage.getByLabel(`Role for ${member.username}`)).toBeVisible()
-        await expect(ownerPage.getByRole('button', { name: 'Remove' })).toBeVisible()
-        await ownerPage.getByRole('button', { name: 'Close' }).click()
+        await expect(ownerPage.getByLabel('Invitar por nombre de usuario o correo')).toBeVisible()
+        await expect(ownerPage.getByLabel(`Rol de ${member.username}`)).toBeVisible()
+        await expect(ownerPage.getByRole('button', { name: 'Quitar' })).toBeVisible()
+        await ownerPage.getByRole('button', { name: 'Cerrar' }).click()
       })
 
       await test.step('member leaves the board (self-remove)', async () => {
         await openMembersPanel(memberPage)
-        await memberPage.getByRole('button', { name: 'Leave board' }).click()
+        await memberPage.getByRole('button', { name: 'Salir del tablero' }).click()
         // MembersPanel's onLeave prop is wired to navigate('/') in BoardPage.
         await expect(memberPage).toHaveURL('/')
       })
