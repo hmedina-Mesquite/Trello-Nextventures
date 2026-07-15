@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { sanitizeFileName } from '../lib/storage'
+import { isImageAttachment } from '../lib/attachments'
 import { linkifyText } from '../lib/linkify'
 import { useAuth } from '../contexts/AuthContext'
 import type {
@@ -23,20 +24,12 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-const IMAGE_EXTENSION_RE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i
-
-function isImageAttachment(attachment: Attachment): boolean {
-  if (!attachment.storage_path) return false
-  if (attachment.file_type) return attachment.file_type.startsWith('image/')
-  return IMAGE_EXTENSION_RE.test(attachment.file_name)
-}
-
 interface CardDetailModalProps {
   card: Card
   boardLabels: Label[]
   assignedLabelIds: string[]
   boardOwnerId: string
-  onClose: () => void
+  onClose: (cardId: string) => void
   onUpdate: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description'>>) => void
   onDelete: (cardId: string) => void
   onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
@@ -70,6 +63,7 @@ export function CardDetailModal({
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [attachmentsLoading, setAttachmentsLoading] = useState(true)
   const [uploadingFile, setUploadingFile] = useState(false)
+  const [coverAttachmentId, setCoverAttachmentId] = useState(card.cover_attachment_id)
   const [newLinkName, setNewLinkName] = useState('')
   const [newLinkUrl, setNewLinkUrl] = useState('')
   const [imageThumbnails, setImageThumbnails] = useState<Record<string, string>>({})
@@ -212,7 +206,7 @@ export function CardDetailModal({
 
   function handleDelete() {
     onDelete(card.id)
-    onClose()
+    onClose(card.id)
   }
 
   function handleLabelToggle(labelId: string) {
@@ -426,6 +420,20 @@ export function CardDetailModal({
       return
     }
     setAttachments((prev) => prev.filter((a) => a.id !== attachment.id))
+    // Mirrors the DB's `on delete set null` on cards.cover_attachment_id.
+    if (coverAttachmentId === attachment.id) setCoverAttachmentId(null)
+  }
+
+  async function handleSetCover(attachmentId: string | null) {
+    const { error: updateError } = await supabase
+      .from('cards')
+      .update({ cover_attachment_id: attachmentId })
+      .eq('id', card.id)
+    if (updateError) {
+      setModalError(updateError.message)
+      return
+    }
+    setCoverAttachmentId(attachmentId)
   }
 
   function canDeleteAttachment(attachment: Attachment): boolean {
@@ -436,7 +444,7 @@ export function CardDetailModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-6"
-      onClick={onClose}
+      onClick={() => onClose(card.id)}
     >
       <div
         className="mt-10 w-full max-w-lg rounded-lg bg-white p-5 shadow-xl"
@@ -458,7 +466,7 @@ export function CardDetailModal({
           />
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => onClose(card.id)}
             className="shrink-0 rounded px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
             aria-label="Cerrar"
           >
@@ -718,7 +726,30 @@ export function CardDetailModal({
                       </button>
                       <div className="flex items-center justify-between gap-2">
                         {nameAndMeta}
-                        {deleteButton}
+                        <div className="flex shrink-0 items-center gap-2">
+                          {coverAttachmentId === attachment.id ? (
+                            <span className="flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+                              Portada actual
+                              <button
+                                type="button"
+                                onClick={() => void handleSetCover(null)}
+                                className="text-blue-400 hover:text-blue-700"
+                                aria-label="Quitar portada"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => void handleSetCover(attachment.id)}
+                              className="rounded px-1.5 py-0.5 text-xs text-gray-500 hover:bg-gray-200"
+                            >
+                              Usar como portada
+                            </button>
+                          )}
+                          {deleteButton}
+                        </div>
                       </div>
                     </div>
                   )

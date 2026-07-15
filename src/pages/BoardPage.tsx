@@ -3,17 +3,20 @@ import type { CSSProperties, FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   closestCorners,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { supabase } from '../lib/supabaseClient'
+import { isImageAttachment } from '../lib/attachments'
 import { useAuth } from '../contexts/AuthContext'
 import type { Board, BoardRole, Card, Label, List, ListWithCards } from '../types'
-import { ListColumn } from '../components/ListColumn'
+import { ListColumn, ListOverlayPreview } from '../components/ListColumn'
+import { CardOverlayPreview } from '../components/CardItem'
 import { LabelsPanel } from '../components/LabelsPanel'
 import { MembersPanel } from '../components/MembersPanel'
 import { BackgroundPanel } from '../components/BackgroundPanel'
@@ -24,6 +27,69 @@ function computeFractionalPosition(prev: number | undefined, next: number | unde
   if (prev === undefined) return next! - 1
   if (next === undefined) return prev + 1
   return (prev + next) / 2
+}
+
+interface CoverCandidate {
+  id: string
+  card_id: string
+  storage_path: string | null
+  file_type: string | null
+  file_name: string
+  created_at: string
+}
+
+/**
+ * Card front cover image (T051): explicit `cover_attachment_id` if it's
+ * still a valid image attachment on that card, else the most recently added
+ * image attachment, else no cover. One batched `createSignedUrls()` call
+ * for however many cards need one, matching the existing pattern for
+ * attachment thumbnails inside CardDetailModal.
+ */
+async function computeCardCoverUrls(
+  cardIds: string[],
+  coverAttachmentIdByCardId: Record<string, string | null>,
+): Promise<Record<string, string>> {
+  if (cardIds.length === 0) return {}
+
+  const { data, error } = await supabase
+    .from('attachments')
+    .select('id, card_id, storage_path, file_type, file_name, created_at')
+    .in('card_id', cardIds)
+    .order('created_at', { ascending: false })
+  if (error || !data) return {}
+
+  const imagesByCard = new Map<string, CoverCandidate[]>()
+  for (const img of (data as CoverCandidate[]).filter(isImageAttachment)) {
+    imagesByCard.set(img.card_id, [...(imagesByCard.get(img.card_id) ?? []), img])
+  }
+
+  const chosenByCard = new Map<string, CoverCandidate>()
+  for (const cardId of cardIds) {
+    // Already ordered by created_at desc from the query above, so [0] is the most recent.
+    const candidates = imagesByCard.get(cardId)
+    if (!candidates || candidates.length === 0) continue
+    const explicitId = coverAttachmentIdByCardId[cardId]
+    const explicit = explicitId ? candidates.find((c) => c.id === explicitId) : undefined
+    chosenByCard.set(cardId, explicit ?? candidates[0])
+  }
+
+  const paths = [...chosenByCard.values()]
+    .map((c) => c.storage_path)
+    .filter((p): p is string => Boolean(p))
+  if (paths.length === 0) return {}
+
+  const { data: signedUrls, error: signedError } = await supabase.storage
+    .from('card-attachments')
+    .createSignedUrls(paths, 3600)
+  if (signedError || !signedUrls) return {}
+
+  const urlByPath = new Map(signedUrls.map((s) => [s.path, s.signedUrl]))
+  const result: Record<string, string> = {}
+  for (const [cardId, chosen] of chosenByCard) {
+    const url = chosen.storage_path ? urlByPath.get(chosen.storage_path) : undefined
+    if (url) result[cardId] = url
+  }
+  return result
 }
 
 export default function BoardPage() {
@@ -45,6 +111,9 @@ export default function BoardPage() {
   const [showMembersPanel, setShowMembersPanel] = useState(false)
   const [showBackgroundPanel, setShowBackgroundPanel] = useState(false)
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null)
+  const [activeCard, setActiveCard] = useState<Card | null>(null)
+  const [activeList, setActiveList] = useState<ListWithCards | null>(null)
+  const [cardCoverUrls, setCardCoverUrls] = useState<Record<string, string>>({})
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const isOwner = currentRole === 'owner'
@@ -143,6 +212,12 @@ export default function BoardPage() {
           cardLabelMap[row.card_id] = [...(cardLabelMap[row.card_id] ?? []), row.label_id]
         }
       }
+
+      const coverAttachmentIdByCardId: Record<string, string | null> = {}
+      for (const c of cardsData) coverAttachmentIdByCardId[c.id] = c.cover_attachment_id
+      const coverUrls = await computeCardCoverUrls(cardsData.map((c) => c.id), coverAttachmentIdByCardId)
+      if (cancelled) return
+      setCardCoverUrls(coverUrls)
 
       if (user) {
         const { data: memberRow, error: memberError } = await supabase
@@ -319,6 +394,42 @@ export default function BoardPage() {
     )
   }
 
+  /**
+   * Re-derives one card's cover from scratch -- covers the "Make cover"
+   * button changing cover_attachment_id and the case CardDetailModal itself
+   * doesn't report explicitly: a new image was uploaded (or the current
+   * cover deleted) with no explicit cover set, changing the default.
+   * Called whenever that card's detail modal closes; cheap enough per-card
+   * that a single uniform refresh beats threading a change reason through.
+   */
+  async function refreshCardCover(cardId: string) {
+    const { data: cardRow, error: cardRowError } = await supabase
+      .from('cards')
+      .select('cover_attachment_id')
+      .eq('id', cardId)
+      .maybeSingle()
+    // Falls back to "no explicit cover" (still resolves the most-recent-image
+    // default below) rather than aborting outright on error -- a card that
+    // was deleted mid-request, or a transient network blip, shouldn't hide
+    // the default cover too.
+    const explicitCoverId = !cardRowError && cardRow ? cardRow.cover_attachment_id : null
+
+    setLists((prev) =>
+      prev.map((l) => ({
+        ...l,
+        cards: l.cards.map((c) => (c.id === cardId ? { ...c, cover_attachment_id: explicitCoverId } : c)),
+      })),
+    )
+
+    const coverUrls = await computeCardCoverUrls([cardId], { [cardId]: explicitCoverId })
+    setCardCoverUrls((prev) => {
+      const next = { ...prev }
+      if (coverUrls[cardId]) next[cardId] = coverUrls[cardId]
+      else delete next[cardId]
+      return next
+    })
+  }
+
   async function handleDeleteCard(cardId: string) {
     if (!window.confirm('¿Eliminar esta tarjeta?')) return
     const { error: deleteError } = await supabase.from('cards').delete().eq('id', cardId)
@@ -398,72 +509,93 @@ export default function BoardPage() {
     return containingList?.id ?? null
   }
 
-  function resolveCardDropTarget(overId: string): { listId: string; index: number } | null {
-    const asList = lists.find((l) => l.id === overId)
+  function resolveCardDropTarget(
+    listsSnapshot: ListWithCards[],
+    overId: string,
+  ): { listId: string; index: number } | null {
+    const asList = listsSnapshot.find((l) => l.id === overId)
     if (asList) return { listId: asList.id, index: asList.cards.length }
-    for (const list of lists) {
+    for (const list of listsSnapshot) {
       const idx = list.cards.findIndex((c) => c.id === overId)
       if (idx !== -1) return { listId: list.id, index: idx }
     }
     return null
   }
 
-  async function handleCardDragEnd(activeId: string, overId: string) {
-    const sourceListIdx = lists.findIndex((l) => l.cards.some((c) => c.id === activeId))
-    if (sourceListIdx === -1) return
-    const sourceList = lists[sourceListIdx]
-    const activeCard = sourceList.cards.find((c) => c.id === activeId)
-    if (!activeCard) return
+  function handleDragStart(event: DragStartEvent) {
+    const { active } = event
+    const activeType = active.data.current?.type as 'card' | 'list' | undefined
+    const activeId = String(active.id)
 
-    const target = resolveCardDropTarget(overId)
-    if (!target) return
-    const destListIdx = lists.findIndex((l) => l.id === target.listId)
-    if (destListIdx === -1) return
+    if (activeType === 'card') {
+      const sourceList = lists.find((l) => l.cards.some((c) => c.id === activeId))
+      setActiveCard(sourceList?.cards.find((c) => c.id === activeId) ?? null)
+    } else if (activeType === 'list') {
+      setActiveList(lists.find((l) => l.id === activeId) ?? null)
+    }
+  }
 
-    if (destListIdx === sourceListIdx) {
-      const oldIndex = sourceList.cards.findIndex((c) => c.id === activeId)
-      const newIndex = target.index
-      if (newIndex === oldIndex) return
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event
+    if (!over) return
+    const activeType = active.data.current?.type as 'card' | 'list' | undefined
+    if (activeType !== 'card') return
 
-      const reordered = arrayMove(sourceList.cards, oldIndex, newIndex)
-      const movedIndex = reordered.findIndex((c) => c.id === activeId)
-      const prevCard = reordered[movedIndex - 1]
-      const nextCard = reordered[movedIndex + 1]
-      const newPosition = computeFractionalPosition(prevCard?.position, nextCard?.position)
-      const updatedCards = reordered.map((c) => (c.id === activeId ? { ...c, position: newPosition } : c))
+    const activeId = String(active.id)
+    const overId = String(over.id)
+    if (activeId === overId) return
 
-      setLists((prev) => prev.map((l, idx) => (idx === sourceListIdx ? { ...l, cards: updatedCards } : l)))
+    setLists((prev) => {
+      const sourceListIdx = prev.findIndex((l) => l.cards.some((c) => c.id === activeId))
+      if (sourceListIdx === -1) return prev
 
-      const { error: updateError } = await supabase
-        .from('cards')
-        .update({ position: newPosition, list_id: sourceList.id })
-        .eq('id', activeId)
-      if (updateError) setError(updateError.message)
-      return
+      const target = resolveCardDropTarget(prev, overId)
+      if (!target) return prev
+      const destListIdx = prev.findIndex((l) => l.id === target.listId)
+      if (destListIdx === -1 || destListIdx === sourceListIdx) return prev
+
+      const sourceList = prev[sourceListIdx]
+      const movingCard = sourceList.cards.find((c) => c.id === activeId)
+      if (!movingCard) return prev
+
+      const destList = prev[destListIdx]
+      const insertIndex = Math.min(target.index, destList.cards.length)
+      const newDestCards = [...destList.cards]
+      newDestCards.splice(insertIndex, 0, { ...movingCard, list_id: destList.id })
+
+      return prev.map((l, idx) => {
+        if (idx === sourceListIdx) return { ...l, cards: l.cards.filter((c) => c.id !== activeId) }
+        if (idx === destListIdx) return { ...l, cards: newDestCards }
+        return l
+      })
+    })
+  }
+
+  async function finalizeCardDrag(activeId: string, overId: string | null) {
+    const listIdx = lists.findIndex((l) => l.cards.some((c) => c.id === activeId))
+    if (listIdx === -1) return
+    const currentList = lists[listIdx]
+    let cards = currentList.cards
+
+    if (overId && overId !== activeId) {
+      const oldIndex = cards.findIndex((c) => c.id === activeId)
+      const overIndex = cards.findIndex((c) => c.id === overId)
+      if (oldIndex !== -1 && overIndex !== -1 && overIndex !== oldIndex) {
+        cards = arrayMove(cards, oldIndex, overIndex)
+      }
     }
 
-    const destList = lists[destListIdx]
-    const insertIndex = Math.min(target.index, destList.cards.length)
-    const prevCard = destList.cards[insertIndex - 1]
-    const nextCard = destList.cards[insertIndex]
+    const movedIndex = cards.findIndex((c) => c.id === activeId)
+    const prevCard = cards[movedIndex - 1]
+    const nextCard = cards[movedIndex + 1]
     const newPosition = computeFractionalPosition(prevCard?.position, nextCard?.position)
-    const movedCard: Card = { ...activeCard, position: newPosition, list_id: destList.id }
+    const updatedCards = cards.map((c) => (c.id === activeId ? { ...c, position: newPosition } : c))
 
-    setLists((prev) =>
-      prev.map((l, idx) => {
-        if (idx === sourceListIdx) return { ...l, cards: l.cards.filter((c) => c.id !== activeId) }
-        if (idx === destListIdx) {
-          const newCards = [...l.cards]
-          newCards.splice(insertIndex, 0, movedCard)
-          return { ...l, cards: newCards }
-        }
-        return l
-      }),
-    )
+    setLists((prev) => prev.map((l, idx) => (idx === listIdx ? { ...l, cards: updatedCards } : l)))
 
     const { error: updateError } = await supabase
       .from('cards')
-      .update({ position: newPosition, list_id: destList.id })
+      .update({ position: newPosition, list_id: currentList.id })
       .eq('id', activeId)
     if (updateError) setError(updateError.message)
   }
@@ -492,17 +624,24 @@ export default function BoardPage() {
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
-    if (!over) return
-    const activeId = String(active.id)
-    const overId = String(over.id)
-    if (activeId === overId) return
+    setActiveCard(null)
+    setActiveList(null)
 
+    const activeId = String(active.id)
+    const overId = over ? String(over.id) : null
     const activeType = active.data.current?.type as 'card' | 'list' | undefined
+
     if (activeType === 'list') {
+      if (!overId || activeId === overId) return
       void handleListDragEnd(activeId, overId)
     } else if (activeType === 'card') {
-      void handleCardDragEnd(activeId, overId)
+      void finalizeCardDrag(activeId, overId)
     }
+  }
+
+  function handleDragCancel() {
+    setActiveCard(null)
+    setActiveList(null)
   }
 
   if (loading) {
@@ -605,15 +744,33 @@ export default function BoardPage() {
 
       {error && <p className="bg-red-100 px-6 py-2 text-sm text-red-700">{error}</p>}
 
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
         <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
-          <div className="flex flex-1 items-start gap-4 overflow-x-auto p-4">
+          {/* relative: without it, no ancestor in this chain is positioned,
+              so absolutely-positioned sr-only <label>s nested anywhere inside
+              (this form's, or any ListColumn's own add-card label) resolve
+              their containing block all the way up to the document root.
+              Their static position reflects the full unclipped row width,
+              which stretches document.documentElement's scrollWidth past the
+              viewport -- scrolling the actual page (not just this container)
+              that far reveals plain white body background past the board's
+              edge. relative here makes this div the containing block instead,
+              so nothing escapes its own overflow-x-auto clipping. */}
+          <div className="relative flex flex-1 items-start gap-4 overflow-x-auto p-4">
             {lists.map((list) => (
               <ListColumn
                 key={list.id}
                 list={list}
                 boardLabels={boardLabels}
                 cardLabelsByCardId={cardLabelsByCardId}
+                cardCoverUrlByCardId={cardCoverUrls}
                 boardOwnerId={board.owner_id}
                 onRename={handleRenameList}
                 onDelete={(listId) => void handleDeleteList(listId)}
@@ -623,6 +780,7 @@ export default function BoardPage() {
                 onToggleLabel={(cardId, labelId, assign) =>
                   void handleToggleCardLabel(cardId, labelId, assign)
                 }
+                onCardModalClose={(cardId) => void refreshCardCover(cardId)}
               />
             ))}
 
@@ -651,6 +809,22 @@ export default function BoardPage() {
             </form>
           </div>
         </SortableContext>
+
+        <DragOverlay>
+          {activeCard ? (
+            <CardOverlayPreview
+              card={activeCard}
+              labels={cardLabelsByCardId[activeCard.id] ?? []}
+              coverUrl={cardCoverUrls[activeCard.id]}
+            />
+          ) : activeList ? (
+            <ListOverlayPreview
+              list={activeList}
+              cardLabelsByCardId={cardLabelsByCardId}
+              cardCoverUrlByCardId={cardCoverUrls}
+            />
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       {showLabelsPanel && (

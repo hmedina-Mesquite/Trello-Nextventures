@@ -3,12 +3,41 @@ import type { FormEvent } from 'react'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card, Label, ListWithCards } from '../types'
-import { CardItem } from './CardItem'
+import { CardFace, CardItem } from './CardItem'
+
+export function ListOverlayPreview({
+  list,
+  cardLabelsByCardId,
+  cardCoverUrlByCardId,
+}: {
+  list: ListWithCards
+  cardLabelsByCardId: Record<string, Label[]>
+  cardCoverUrlByCardId: Record<string, string>
+}) {
+  return (
+    <div className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-gray-100 p-3 shadow-lg">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="w-full rounded px-2 py-1 text-sm font-semibold text-gray-800">{list.name}</h2>
+      </div>
+      <div className="flex flex-col gap-2">
+        {list.cards.map((card) => (
+          <div
+            key={card.id}
+            className="flex w-full flex-col gap-1 rounded border border-gray-200 bg-white px-3 py-2 text-left text-sm text-gray-800 shadow-sm"
+          >
+            <CardFace card={card} labels={cardLabelsByCardId[card.id] ?? []} coverUrl={cardCoverUrlByCardId[card.id]} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 interface ListColumnProps {
   list: ListWithCards
   boardLabels: Label[]
   cardLabelsByCardId: Record<string, Label[]>
+  cardCoverUrlByCardId: Record<string, string>
   boardOwnerId: string
   onRename: (listId: string, name: string) => void
   onDelete: (listId: string) => void
@@ -16,12 +45,14 @@ interface ListColumnProps {
   onUpdateCard: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description'>>) => void
   onDeleteCard: (cardId: string) => void
   onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
+  onCardModalClose: (cardId: string) => void
 }
 
 export function ListColumn({
   list,
   boardLabels,
   cardLabelsByCardId,
+  cardCoverUrlByCardId,
   boardOwnerId,
   onRename,
   onDelete,
@@ -29,6 +60,7 @@ export function ListColumn({
   onUpdateCard,
   onDeleteCard,
   onToggleLabel,
+  onCardModalClose,
 }: ListColumnProps) {
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState(list.name)
@@ -73,7 +105,7 @@ export function ListColumn({
       ref={setNodeRef}
       style={style}
       className={`flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-gray-100 p-3 shadow ${
-        isDragging ? 'opacity-50' : ''
+        isDragging ? 'opacity-0' : ''
       }`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -132,9 +164,11 @@ export function ListColumn({
               labels={cardLabelsByCardId[card.id] ?? []}
               boardLabels={boardLabels}
               boardOwnerId={boardOwnerId}
+              coverUrl={cardCoverUrlByCardId[card.id]}
               onUpdate={onUpdateCard}
               onDelete={onDeleteCard}
               onToggleLabel={onToggleLabel}
+              onCardModalClose={onCardModalClose}
             />
           ))}
         </div>
