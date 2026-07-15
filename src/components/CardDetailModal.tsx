@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { sanitizeFileName } from '../lib/storage'
+import { linkifyText } from '../lib/linkify'
 import { useAuth } from '../contexts/AuthContext'
 import type {
   Attachment,
@@ -54,6 +55,7 @@ export function CardDetailModal({
   const { user } = useAuth()
   const [title, setTitle] = useState(card.title)
   const [description, setDescription] = useState(card.description ?? '')
+  const [editingDescription, setEditingDescription] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
 
   const [checklists, setChecklists] = useState<ChecklistWithItems[]>([])
@@ -201,6 +203,7 @@ export function CardDetailModal({
   }
 
   function commitDescription() {
+    setEditingDescription(false)
     const current = card.description ?? ''
     if (description !== current) {
       onUpdate(card.id, { description: description.trim() ? description : null })
@@ -473,15 +476,29 @@ export function CardDetailModal({
         >
           Descripción
         </label>
-        <textarea
-          id="card-description"
-          rows={4}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onBlur={commitDescription}
-          placeholder="Agrega una descripción más detallada…"
-          className="mb-4 w-full resize-y rounded border border-gray-300 px-2 py-2 text-sm text-gray-800 focus:border-blue-400 focus:outline-none"
-        />
+        {editingDescription ? (
+          <textarea
+            id="card-description"
+            autoFocus
+            rows={4}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onBlur={commitDescription}
+            placeholder="Agrega una descripción más detallada…"
+            className="mb-4 w-full resize-y rounded border border-blue-400 px-2 py-2 text-sm text-gray-800 focus:outline-none"
+          />
+        ) : (
+          <div
+            onClick={() => setEditingDescription(true)}
+            className="mb-4 min-h-[3rem] w-full cursor-text whitespace-pre-wrap rounded border border-transparent px-2 py-2 text-sm hover:border-gray-200 hover:bg-gray-50"
+          >
+            {description.trim() ? (
+              <span className="text-gray-800">{linkifyText(description)}</span>
+            ) : (
+              <span className="text-gray-400">Agrega una descripción más detallada…</span>
+            )}
+          </div>
+        )}
 
         {/* Labels */}
         <div className="mb-4">
@@ -641,26 +658,9 @@ export function CardDetailModal({
               {attachments.length === 0 && (
                 <p className="text-sm text-gray-500">Aún no hay archivos adjuntos.</p>
               )}
-              {attachments.map((attachment) => (
-                <div
-                  key={attachment.id}
-                  className="flex items-center justify-between gap-2 rounded bg-gray-50 p-2"
-                >
-                  {isImageAttachment(attachment) && imageThumbnails[attachment.id] && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        attachment.storage_path && void handleOpenFileAttachment(attachment.storage_path)
-                      }
-                      className="shrink-0"
-                    >
-                      <img
-                        src={imageThumbnails[attachment.id]}
-                        alt={attachment.file_name}
-                        className="h-16 w-16 rounded border border-gray-200 object-cover"
-                      />
-                    </button>
-                  )}
+              {attachments.map((attachment) => {
+                const showImage = isImageAttachment(attachment) && imageThumbnails[attachment.id]
+                const nameAndMeta = (
                   <div className="min-w-0 flex-1">
                     {attachment.url ? (
                       <a
@@ -689,18 +689,51 @@ export function CardDetailModal({
                       </span>
                     )}
                   </div>
-                  {canDeleteAttachment(attachment) && (
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteAttachment(attachment)}
-                      className="shrink-0 rounded px-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-700"
-                      aria-label={`Eliminar archivo adjunto ${attachment.file_name}`}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
+                )
+                const deleteButton = canDeleteAttachment(attachment) && (
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteAttachment(attachment)}
+                    className="shrink-0 rounded px-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-700"
+                    aria-label={`Eliminar archivo adjunto ${attachment.file_name}`}
+                  >
+                    ✕
+                  </button>
+                )
+
+                if (showImage) {
+                  return (
+                    <div key={attachment.id} className="flex flex-col gap-2 rounded bg-gray-50 p-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          attachment.storage_path && void handleOpenFileAttachment(attachment.storage_path)
+                        }
+                      >
+                        <img
+                          src={imageThumbnails[attachment.id]}
+                          alt={attachment.file_name}
+                          className="max-h-96 w-full rounded border border-gray-200 object-contain"
+                        />
+                      </button>
+                      <div className="flex items-center justify-between gap-2">
+                        {nameAndMeta}
+                        {deleteButton}
+                      </div>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center justify-between gap-2 rounded bg-gray-50 p-2"
+                  >
+                    {nameAndMeta}
+                    {deleteButton}
+                  </div>
+                )
+              })}
             </div>
           )}
 
@@ -786,7 +819,7 @@ export function CardDetailModal({
                       )}
                     </div>
                   </div>
-                  <p className="whitespace-pre-wrap text-sm text-gray-800">{comment.body}</p>
+                  <p className="whitespace-pre-wrap text-sm text-gray-800">{linkifyText(comment.body)}</p>
                 </div>
               ))}
             </div>
