@@ -15,15 +15,15 @@ export function ListOverlayPreview({
   cardCoverUrlByCardId: Record<string, string>
 }) {
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-gray-100 p-3 shadow-lg">
+    <div className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-xl bg-slate-50 p-3 shadow-elevated">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="w-full rounded px-2 py-1 text-sm font-semibold text-gray-800">{list.name}</h2>
+        <h2 className="w-full rounded-lg px-2 py-1 text-sm font-semibold text-slate-800">{list.name}</h2>
       </div>
       <div className="flex flex-col gap-2">
         {list.cards.map((card) => (
           <div
             key={card.id}
-            className="flex w-full flex-col gap-1 rounded border border-gray-200 bg-white px-3 py-2 text-left text-sm text-gray-800 shadow-sm"
+            className="flex w-full flex-col gap-1 rounded-lg border border-border-subtle bg-surface px-3 py-2 text-left text-sm text-slate-800 shadow-card"
           >
             <CardFace card={card} labels={cardLabelsByCardId[card.id] ?? []} coverUrl={cardCoverUrlByCardId[card.id]} />
           </div>
@@ -42,7 +42,7 @@ interface ListColumnProps {
   onRename: (listId: string, name: string) => void
   onDelete: (listId: string) => void
   onAddCard: (listId: string, title: string) => void
-  onUpdateCard: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description'>>) => void
+  onUpdateCard: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete'>>) => void
   onDeleteCard: (cardId: string) => void
   onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
   onCardModalClose: (cardId: string) => void
@@ -104,7 +104,7 @@ export function ListColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-gray-100 p-3 shadow ${
+      className={`flex w-72 flex-shrink-0 flex-col gap-2 rounded-xl bg-slate-50 p-3 shadow-card ${
         isDragging ? 'opacity-0' : ''
       }`}
     >
@@ -113,7 +113,7 @@ export function ListColumn({
           type="button"
           {...attributes}
           {...listeners}
-          className="shrink-0 cursor-grab rounded px-1 py-1 text-gray-400 hover:bg-gray-200 active:cursor-grabbing"
+          className="shrink-0 cursor-grab rounded-lg px-1 py-1 text-slate-400 transition-colors hover:bg-slate-200 active:cursor-grabbing"
           style={{ touchAction: 'none' }}
           aria-label={`Arrastrar lista ${list.name}`}
           title="Arrastra para reordenar la lista"
@@ -133,11 +133,11 @@ export function ListColumn({
                 setEditingName(false)
               }
             }}
-            className="w-full rounded border border-blue-400 px-2 py-1 text-sm font-semibold text-gray-900"
+            className="w-full rounded-lg border border-primary px-2 py-1 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         ) : (
           <h2
-            className="w-full cursor-text rounded px-2 py-1 text-sm font-semibold text-gray-800 hover:bg-gray-200"
+            className="w-full cursor-text rounded-lg px-2 py-1 text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-200"
             onClick={() => setEditingName(true)}
           >
             {list.name}
@@ -146,7 +146,7 @@ export function ListColumn({
         <button
           type="button"
           onClick={() => onDelete(list.id)}
-          className="shrink-0 rounded px-1.5 py-1 text-xs text-gray-500 hover:bg-red-100 hover:text-red-700"
+          className="shrink-0 cursor-pointer rounded-lg px-1.5 py-1 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
           aria-label={`Eliminar lista ${list.name}`}
           title="Eliminar lista"
         >
@@ -196,12 +196,12 @@ export function ListColumn({
               }
             }}
             placeholder="Escribe un título para esta tarjeta"
-            className="w-full resize-none rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
+            className="w-full resize-none rounded-lg border border-border-subtle bg-surface px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div className="flex items-center gap-2">
             <button
               type="submit"
-              className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+              className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
             >
               Agregar tarjeta
             </button>
@@ -211,7 +211,7 @@ export function ListColumn({
                 setAddingCard(false)
                 setNewCardTitle('')
               }}
-              className="text-sm text-gray-500 hover:text-gray-800"
+              className="cursor-pointer text-sm text-slate-500 transition-colors hover:text-slate-800"
             >
               Cancelar
             </button>
@@ -221,7 +221,7 @@ export function ListColumn({
         <button
           type="button"
           onClick={() => setAddingCard(true)}
-          className="rounded px-2 py-1.5 text-left text-sm text-gray-600 hover:bg-gray-200"
+          className="cursor-pointer rounded-lg px-2 py-1.5 text-left text-sm text-slate-600 transition-colors hover:bg-slate-200"
         >
           + Agregar una tarjeta
         </button>

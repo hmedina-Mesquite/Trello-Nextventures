@@ -70,25 +70,25 @@ export function BackgroundPanel({ board, onClose, onBackgroundChange }: Backgrou
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-sm rounded-lg bg-white p-5 shadow-xl"
+        className="mt-10 w-full max-w-sm rounded-2xl bg-surface p-6 shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Fondo</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Fondo</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            className="cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
           </button>
         </div>
 
-        {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mb-3 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{error}</p>}
 
-        <div className="flex flex-col gap-2 border-b border-gray-200 pb-4">
-          <label htmlFor="background-color" className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <div className="flex flex-col gap-2 border-b border-border-subtle pb-4">
+          <label htmlFor="background-color" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Color sólido
           </label>
           <div className="flex items-center gap-2">
@@ -97,13 +97,13 @@ export function BackgroundPanel({ board, onClose, onBackgroundChange }: Backgrou
               type="color"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              className="h-9 w-14 cursor-pointer rounded border border-gray-300"
+              className="h-9 w-14 cursor-pointer rounded-lg border border-border-subtle"
             />
             <button
               type="button"
               onClick={() => void handleApplyColor()}
               disabled={applyingColor}
-              className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {applyingColor ? 'Aplicando…' : 'Aplicar color'}
             </button>
@@ -111,7 +111,7 @@ export function BackgroundPanel({ board, onClose, onBackgroundChange }: Backgrou
         </div>
 
         <div className="flex flex-col gap-2 pt-4">
-          <label htmlFor="background-image" className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <label htmlFor="background-image" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Foto de fondo
           </label>
           <input
@@ -120,9 +120,9 @@ export function BackgroundPanel({ board, onClose, onBackgroundChange }: Backgrou
             accept="image/*"
             onChange={(e) => void handleFileChange(e)}
             disabled={uploading}
-            className="text-sm text-gray-700 file:mr-2 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+            className="text-sm text-slate-700 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 file:transition-colors hover:file:bg-slate-200"
           />
-          {uploading && <p className="text-sm text-gray-500">Subiendo imagen…</p>}
+          {uploading && <p className="text-sm text-slate-500">Subiendo imagen…</p>}
         </div>
       </div>
     </div>

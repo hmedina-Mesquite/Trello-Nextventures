@@ -60,12 +60,18 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">Registrarse</h1>
+    <div className="flex min-h-screen items-center justify-center bg-app-bg px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-border-subtle bg-surface p-8 shadow-elevated">
+        <div className="mb-6 flex items-center justify-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
+            T
+          </div>
+          <span className="text-lg font-bold text-slate-900">Trello</span>
+        </div>
+        <h1 className="mb-6 text-center text-xl font-semibold text-slate-900">Registrarse</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="username" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-slate-700">
               Nombre de usuario
             </label>
             <input
@@ -75,11 +81,11 @@ export default function SignupPage() {
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
               Correo electrónico
             </label>
             <input
@@ -89,11 +95,11 @@ export default function SignupPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
               Contraseña
             </label>
             <input
@@ -104,22 +110,26 @@ export default function SignupPage() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-lg border border-border-subtle px-3 py-2.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {info && <p className="text-sm text-green-700">{info}</p>}
+          {error && (
+            <p className="rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{error}</p>
+          )}
+          {info && (
+            <p className="rounded-lg bg-success-light px-3 py-2 text-sm text-success">{info}</p>
+          )}
           <button
             type="submit"
             disabled={submitting}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="cursor-pointer rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? 'Registrando…' : 'Registrarse'}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
+        <p className="mt-5 text-center text-sm text-slate-500">
           ¿Ya tienes una cuenta?{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:underline">
+          <Link to="/login" className="font-medium text-primary hover:text-primary-hover">
             Inicia sesión
           </Link>
         </p>

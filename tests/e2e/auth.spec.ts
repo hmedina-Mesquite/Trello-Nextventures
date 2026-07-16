@@ -48,6 +48,6 @@ test.describe('auth', () => {
     await expect(page).toHaveURL(/\/login$/)
     // LoginPage renders the Supabase error message text (src/pages/LoginPage.tsx);
     // exact wording is Supabase's, so just assert *some* error text appeared.
-    await expect(page.locator('p.text-red-600')).toBeVisible()
+    await expect(page.locator('p.text-danger')).toBeVisible()
   })
 })

@@ -379,7 +379,7 @@ export default function BoardPage() {
 
   async function handleUpdateCard(
     cardId: string,
-    updates: Partial<Pick<Card, 'title' | 'description'>>,
+    updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete'>>,
   ) {
     const { error: updateError } = await supabase.from('cards').update(updates).eq('id', cardId)
     if (updateError) {
@@ -646,7 +646,7 @@ export default function BoardPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-gray-500">
+      <div className="flex min-h-screen items-center justify-center bg-app-bg text-slate-400">
         Cargando tablero…
       </div>
     )
@@ -654,9 +654,9 @@ export default function BoardPage() {
 
   if (!board) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-gray-700">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-app-bg text-slate-700">
         <p>{error ?? 'Tablero no encontrado'}</p>
-        <Link to="/" className="text-blue-600 underline">
+        <Link to="/" className="font-medium text-primary hover:text-primary-hover">
           Volver al panel
         </Link>
       </div>
@@ -674,9 +674,12 @@ export default function BoardPage() {
 
   return (
     <div className="flex min-h-screen flex-col" style={backgroundStyle}>
-      <header className="flex items-center justify-between gap-4 bg-black/20 px-6 py-4">
+      <header className="flex items-center justify-between gap-4 bg-black/25 px-6 py-4 backdrop-blur-sm">
         <div className="flex items-center gap-4">
-          <Link to="/" className="text-sm font-medium text-white/80 hover:text-white">
+          <Link
+            to="/"
+            className="text-sm font-medium text-white/80 transition-colors hover:text-white"
+          >
             ← Tableros
           </Link>
           {isOwner && editingName ? (
@@ -697,12 +700,12 @@ export default function BoardPage() {
                     setEditingName(false)
                   }
                 }}
-                className="rounded bg-white/90 px-2 py-1 text-lg font-bold text-gray-900"
+                className="rounded-lg bg-white/95 px-2 py-1 text-lg font-bold text-slate-900 shadow-sm"
               />
             </>
           ) : (
             <h1
-              className={`rounded px-2 py-1 text-lg font-bold text-white ${
+              className={`rounded-lg px-2 py-1 text-lg font-bold text-white transition-colors ${
                 isOwner ? 'cursor-text hover:bg-white/10' : ''
               }`}
               onClick={() => {
@@ -715,17 +718,23 @@ export default function BoardPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            to="/calendar"
+            className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+          >
+            Calendario
+          </Link>
           <button
             type="button"
             onClick={() => setShowLabelsPanel(true)}
-            className="rounded bg-white/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/20"
+            className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
             Etiquetas
           </button>
           <button
             type="button"
             onClick={() => setShowMembersPanel(true)}
-            className="rounded bg-white/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/20"
+            className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
             Miembros
           </button>
@@ -733,16 +742,18 @@ export default function BoardPage() {
             <button
               type="button"
               onClick={() => setShowBackgroundPanel(true)}
-              className="rounded bg-white/10 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/20"
+              className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
             >
               Fondo
             </button>
           )}
-          <NotificationsBell buttonClassName="relative rounded bg-white/10 px-2 py-1.5 text-sm font-medium text-white hover:bg-white/20" />
+          <NotificationsBell buttonClassName="relative cursor-pointer rounded-lg bg-white/10 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20" />
         </div>
       </header>
 
-      {error && <p className="bg-red-100 px-6 py-2 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="bg-danger-light px-6 py-2 text-sm text-danger">{error}</p>
+      )}
 
       <DndContext
         sensors={sensors}
@@ -786,7 +797,7 @@ export default function BoardPage() {
 
             <form
               onSubmit={handleCreateList}
-              className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-lg bg-black/20 p-3"
+              className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-xl bg-black/20 p-3 backdrop-blur-sm"
             >
               <label htmlFor="new-list-name" className="sr-only">
                 Nombre de la nueva lista
@@ -797,12 +808,12 @@ export default function BoardPage() {
                 placeholder="Agregar una lista"
                 value={newListName}
                 onChange={(e) => setNewListName(e.target.value)}
-                className="rounded border border-transparent bg-white/95 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-400 focus:outline-none"
+                className="rounded-lg border border-transparent bg-white/95 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <button
                 type="submit"
                 disabled={creatingList || !newListName.trim()}
-                className="self-start rounded bg-white/90 px-3 py-1.5 text-sm font-medium text-gray-800 hover:bg-white disabled:opacity-50"
+                className="cursor-pointer self-start rounded-lg bg-white/90 px-3 py-1.5 text-sm font-medium text-slate-800 shadow-sm transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Agregar lista
               </button>

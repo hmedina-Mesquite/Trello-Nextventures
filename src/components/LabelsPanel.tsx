@@ -38,15 +38,15 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-sm rounded-lg bg-white p-5 shadow-xl"
+        className="mt-10 w-full max-w-sm rounded-2xl bg-surface p-6 shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Etiquetas</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Etiquetas</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            className="cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
@@ -54,11 +54,11 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
         </div>
 
         <ul className="mb-4 flex flex-col gap-2">
-          {labels.length === 0 && <li className="text-sm text-gray-500">Aún no hay etiquetas.</li>}
+          {labels.length === 0 && <li className="text-sm text-slate-500">Aún no hay etiquetas.</li>}
           {labels.map((label) => (
             <li
               key={label.id}
-              className="flex items-center justify-between gap-2 rounded px-2 py-1.5"
+              className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5"
               style={{ backgroundColor: label.color }}
             >
               <span className="text-sm font-medium text-white drop-shadow">
@@ -67,7 +67,7 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
               <button
                 type="button"
                 onClick={() => onDelete(label.id)}
-                className="rounded bg-black/20 px-1.5 py-0.5 text-xs text-white hover:bg-black/40"
+                className="cursor-pointer rounded-lg bg-black/20 px-1.5 py-0.5 text-xs text-white transition-colors hover:bg-black/40"
                 aria-label={`Eliminar etiqueta ${label.name}`}
                 title="Eliminar etiqueta"
               >
@@ -77,8 +77,8 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
           ))}
         </ul>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2 border-t border-gray-200 pt-3">
-          <label htmlFor="label-name" className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 border-t border-border-subtle pt-3">
+          <label htmlFor="label-name" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Nueva etiqueta
           </label>
           <input
@@ -87,7 +87,7 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nombre de la etiqueta"
-            className="rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
+            className="rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div className="flex flex-wrap gap-1.5">
             {LABEL_COLORS.map((c) => (
@@ -95,7 +95,7 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
                 key={c.hex}
                 type="button"
                 onClick={() => setColor(c.hex)}
-                className={`h-6 w-6 rounded ${color === c.hex ? 'ring-2 ring-gray-800 ring-offset-1' : ''}`}
+                className={`h-6 w-6 rounded ${color === c.hex ? 'ring-2 ring-primary ring-offset-1' : ''}`}
                 style={{ backgroundColor: c.hex }}
                 aria-label={`Elegir color ${c.name}`}
                 title={c.name}
@@ -105,7 +105,7 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
           <button
             type="submit"
             disabled={!name.trim()}
-            className="self-start rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="self-start cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             Agregar etiqueta
           </button>

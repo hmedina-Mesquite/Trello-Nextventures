@@ -35,8 +35,10 @@ export interface Card {
   title: string
   description: string | null
   position: number
-  due_date: string | null
+  start_date: string | null
+  end_date: string | null
   cover_attachment_id: string | null
+  complete: boolean
   created_at: string
   updated_at: string
 }

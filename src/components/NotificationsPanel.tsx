@@ -64,48 +64,48 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-md rounded-lg bg-white p-5 shadow-xl"
+        className="mt-10 w-full max-w-md rounded-2xl bg-surface p-6 shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Notificaciones</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Notificaciones</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            className="cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
           </button>
         </div>
 
-        {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mb-3 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-gray-500">Cargando notificaciones…</p>
+          <p className="text-sm text-slate-500">Cargando notificaciones…</p>
         ) : notifications.length === 0 ? (
-          <p className="text-sm text-gray-500">No tienes notificaciones.</p>
+          <p className="text-sm text-slate-500">No tienes notificaciones.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {notifications.map((n) => (
               <li
                 key={n.id}
-                className={`rounded border border-gray-100 p-3 ${n.read ? 'bg-white' : 'bg-blue-50'}`}
+                className={`rounded-lg border border-border-subtle p-3 ${n.read ? 'bg-white' : 'bg-primary-light'}`}
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     {EVENT_LABELS[n.event_type] ?? n.event_type}
                   </span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-slate-400">
                     {new Date(n.created_at).toLocaleString()}
                   </span>
                 </div>
-                <p className="mb-2 text-sm text-gray-800">{n.message}</p>
+                <p className="mb-2 text-sm text-slate-800">{n.message}</p>
                 {!n.read && (
                   <button
                     type="button"
                     onClick={() => void handleMarkRead(n.id)}
-                    className="text-xs font-medium text-blue-600 hover:underline"
+                    className="cursor-pointer text-xs font-medium text-primary hover:underline"
                   >
                     Marcar como leída
                   </button>

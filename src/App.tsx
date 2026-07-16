@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import BoardPage from './pages/BoardPage'
+import CalendarPage from './pages/CalendarPage'
+import GoogleCallbackPage from './pages/GoogleCallbackPage'
 
 function App() {
   return (
@@ -26,6 +28,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <BoardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/google-callback"
+            element={
+              <ProtectedRoute>
+                <GoogleCallbackPage />
               </ProtectedRoute>
             }
           />

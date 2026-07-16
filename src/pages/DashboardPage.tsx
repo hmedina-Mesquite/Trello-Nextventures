@@ -92,16 +92,27 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
-        <h1 className="text-xl font-bold text-gray-900">Tus tableros</h1>
+    <div className="min-h-screen bg-app-bg">
+      <header className="flex items-center justify-between border-b border-border-subtle bg-surface px-6 py-4">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
+            T
+          </div>
+          <h1 className="text-lg font-bold text-slate-900">Tus tableros</h1>
+        </div>
         <div className="flex items-center gap-4">
-          {user && <span className="text-sm text-gray-500">{user.email}</span>}
+          <Link
+            to="/calendar"
+            className="text-sm font-medium text-slate-600 transition-colors hover:text-primary"
+          >
+            Calendario
+          </Link>
+          {user && <span className="text-sm text-slate-400">{user.email}</span>}
           <NotificationsBell />
           <button
             type="button"
             onClick={() => void signOut()}
-            className="rounded px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
+            className="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
           >
             Cerrar sesión
           </button>
@@ -110,17 +121,17 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-8">
         {error && (
-          <p className="mb-4 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+          <p className="mb-4 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{error}</p>
         )}
         {loading ? (
-          <p className="text-gray-500">Cargando tableros…</p>
+          <p className="text-slate-400">Cargando tableros…</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {boards.map((board) => (
               <div key={board.id} className="group relative">
                 <Link
                   to={`/boards/${board.id}`}
-                  className="block h-24 rounded-lg p-3 text-white shadow hover:brightness-95"
+                  className="block h-28 rounded-xl p-4 text-white shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:shadow-card-hover"
                   style={{ backgroundColor: board.background_color }}
                 >
                   <span className="font-semibold">{board.name}</span>
@@ -129,7 +140,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => void handleDeleteBoard(board)}
-                    className="absolute right-2 top-2 hidden rounded bg-black/30 px-1.5 py-1 text-xs text-white hover:bg-black/50 group-hover:block"
+                    className="absolute right-2 top-2 hidden cursor-pointer rounded-lg bg-black/30 px-1.5 py-1 text-xs text-white transition-colors hover:bg-black/50 group-hover:block"
                     aria-label={`Eliminar tablero ${board.name}`}
                     title="Eliminar tablero"
                   >
@@ -142,7 +153,7 @@ export default function DashboardPage() {
             {showForm ? (
               <form
                 onSubmit={handleCreateBoard}
-                className="flex h-24 flex-col justify-between rounded-lg border border-gray-200 bg-white p-3 shadow"
+                className="flex h-28 flex-col justify-between rounded-xl border border-border-subtle bg-surface p-3 shadow-card"
               >
                 <label htmlFor="board-name" className="sr-only">
                   Nombre del tablero
@@ -154,7 +165,7 @@ export default function DashboardPage() {
                   placeholder="Nombre del tablero"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-lg border border-border-subtle px-2 py-1 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex gap-1">
@@ -163,8 +174,8 @@ export default function DashboardPage() {
                         key={color}
                         type="button"
                         onClick={() => setNewColor(color)}
-                        className={`h-5 w-5 rounded ${
-                          newColor === color ? 'ring-2 ring-offset-1 ring-gray-800' : ''
+                        className={`h-5 w-5 cursor-pointer rounded-full transition-shadow ${
+                          newColor === color ? 'ring-2 ring-offset-1 ring-primary' : ''
                         }`}
                         style={{ backgroundColor: color }}
                         aria-label={`Elegir color ${color}`}
@@ -175,14 +186,14 @@ export default function DashboardPage() {
                     <button
                       type="submit"
                       disabled={creating || !newName.trim()}
-                      className="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                      className="cursor-pointer rounded-lg bg-primary px-2 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Crear
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowForm(false)}
-                      className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100"
+                      className="cursor-pointer rounded-lg px-2 py-1 text-xs text-slate-500 transition-colors hover:bg-slate-100"
                     >
                       Cancelar
                     </button>
@@ -193,7 +204,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(true)}
-                className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-gray-300 text-sm font-medium text-gray-500 hover:border-gray-400 hover:text-gray-700"
+                className="flex h-28 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border-subtle text-sm font-medium text-slate-500 transition-colors hover:border-primary hover:text-primary"
               >
                 + Crear nuevo tablero
               </button>

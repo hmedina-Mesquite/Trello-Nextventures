@@ -130,36 +130,36 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-md rounded-lg bg-white p-5 shadow-xl"
+        className="mt-10 w-full max-w-md rounded-2xl bg-surface p-6 shadow-elevated"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Miembros</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Miembros</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded px-2 py-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            className="cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
           </button>
         </div>
 
-        {error && <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mb-3 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-gray-500">Cargando miembros…</p>
+          <p className="text-sm text-slate-500">Cargando miembros…</p>
         ) : (
           <ul className="mb-4 flex flex-col gap-2">
             {members.map((member) => (
               <li
                 key={member.user_id}
-                className="flex items-center justify-between gap-2 rounded border border-gray-100 px-3 py-2"
+                className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle px-3 py-2"
               >
-                <span className="text-sm text-gray-800">
+                <span className="text-sm text-slate-800">
                   {member.profiles?.username ?? '(usuario desconocido)'}
                   {member.user_id === currentUserId && (
-                    <span className="ml-1 text-xs text-gray-400">(tú)</span>
+                    <span className="ml-1 text-xs text-slate-400">(tú)</span>
                   )}
                 </span>
                 <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                         id={`role-${member.user_id}`}
                         value={member.role}
                         onChange={(e) => void handleRoleChange(member.user_id, e.target.value as BoardRole)}
-                        className="rounded border border-gray-300 px-1.5 py-1 text-xs text-gray-700"
+                        className="cursor-pointer rounded-lg border border-border-subtle px-1.5 py-1 text-xs text-slate-700"
                       >
                         <option value="owner">Propietario</option>
                         <option value="member">Miembro</option>
@@ -180,19 +180,19 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                       <button
                         type="button"
                         onClick={() => void handleRemove(member.user_id)}
-                        className="rounded px-1.5 py-1 text-xs text-red-600 hover:bg-red-50"
+                        className="cursor-pointer rounded-lg px-1.5 py-1 text-xs text-danger transition-colors hover:bg-danger-light"
                       >
                         Quitar
                       </button>
                     </>
                   ) : (
-                    <span className="text-xs text-gray-500">{ROLE_LABELS[member.role]}</span>
+                    <span className="text-xs text-slate-500">{ROLE_LABELS[member.role]}</span>
                   )}
                   {!isOwner && member.user_id === currentUserId && (
                     <button
                       type="button"
                       onClick={() => void handleLeave()}
-                      className="rounded px-1.5 py-1 text-xs text-red-600 hover:bg-red-50"
+                      className="cursor-pointer rounded-lg px-1.5 py-1 text-xs text-danger transition-colors hover:bg-danger-light"
                     >
                       Salir del tablero
                     </button>
@@ -204,8 +204,8 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
         )}
 
         {isOwner && (
-          <form onSubmit={handleInvite} className="flex flex-col gap-2 border-t border-gray-200 pt-3">
-            <label htmlFor="invite-username" className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <form onSubmit={handleInvite} className="flex flex-col gap-2 border-t border-border-subtle pt-3">
+            <label htmlFor="invite-username" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Invitar por nombre de usuario o correo
             </label>
             <div className="flex gap-2">
@@ -215,12 +215,12 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                 value={inviteUsername}
                 onChange={(e) => setInviteUsername(e.target.value)}
                 placeholder="nombre de usuario o correo"
-                className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-400 focus:outline-none"
+                className="flex-1 rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <button
                 type="submit"
                 disabled={inviting || !inviteUsername.trim()}
-                className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Invitar
               </button>

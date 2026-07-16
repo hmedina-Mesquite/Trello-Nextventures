@@ -59,7 +59,7 @@ try {
   function listColumn(listName) {
     const heading = page.getByRole('heading', { name: listName, level: 2, exact: true })
     return heading.locator(
-      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " bg-gray-100 ")][1]',
+      'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " bg-slate-50 ")][1]',
     )
   }
 

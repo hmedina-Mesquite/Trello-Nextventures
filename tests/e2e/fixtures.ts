@@ -77,7 +77,7 @@ export async function createBoard(page: Page, name: string): Promise<string> {
 export function listColumn(page: Page, listName: string): Locator {
   const heading = page.getByRole('heading', { name: listName, level: 2, exact: true })
   return heading.locator(
-    'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " bg-gray-100 ")][1]',
+    'xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " bg-slate-50 ")][1]',
   )
 }
 
