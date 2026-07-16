@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import type { Notification } from '../types'
@@ -10,6 +11,7 @@ interface NotificationsPanelProps {
 const EVENT_LABELS: Record<string, string> = {
   board_invite: 'Invitación a tablero',
   member_removed: 'Eliminado de un tablero',
+  task_completed: 'Tarea completada',
 }
 
 export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
@@ -58,7 +60,14 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
   }
 
-  return (
+  return createPortal(
+    // Portaled straight to document.body: NotificationsBell (and this panel)
+    // renders wherever its button lives, which on BoardPage is inside a
+    // `backdrop-blur-sm` header -- a backdrop-filter ancestor becomes the
+    // containing block for `position: fixed` descendants (same rule as
+    // `transform`), which trapped this "fixed inset-0" overlay inside the
+    // header's own small box instead of covering the viewport. Portaling
+    // escapes that regardless of which page/header the bell is rendered in.
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-6"
       onClick={onClose}
@@ -115,6 +124,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
           </ul>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -64,6 +64,9 @@ export default function CalendarPage() {
   const [googleStatus, setGoogleStatus] = useState<GoogleConnectionStatus>({ connected: false, email: null })
   const [syncing, setSyncing] = useState(false)
   const [viewDate, setViewDate] = useState(() => new Date())
+  const [feedToken, setFeedToken] = useState<string | null>(null)
+  const [regeneratingFeed, setRegeneratingFeed] = useState(false)
+  const [feedCopied, setFeedCopied] = useState(false)
 
   async function load() {
     if (!user) return
@@ -150,6 +153,7 @@ export default function CalendarPage() {
     void load()
     void getGoogleConnectionStatus().then(setGoogleStatus)
     void pullGoogleCalendarEvents().then(() => load())
+    void supabase.rpc('get_calendar_feed_token').then(({ data }) => setFeedToken((data as string) ?? null))
     // Refresh from Google whenever the user comes back to this tab, since
     // there's no server-side push notification wiring this app in the
     // other direction -- see lib/googleCalendar.ts for the tradeoff.
@@ -166,6 +170,24 @@ export default function CalendarPage() {
     await pullGoogleCalendarEvents()
     await load()
     setSyncing(false)
+  }
+
+  async function handleRegenerateFeedToken() {
+    setRegeneratingFeed(true)
+    const { data, error: rpcError } = await supabase.rpc('regenerate_calendar_feed_token')
+    setRegeneratingFeed(false)
+    if (rpcError) {
+      setError(rpcError.message)
+      return
+    }
+    setFeedToken(data as string)
+    setFeedCopied(false)
+  }
+
+  async function handleCopyFeedUrl(url: string) {
+    await navigator.clipboard.writeText(url)
+    setFeedCopied(true)
+    setTimeout(() => setFeedCopied(false), 2000)
   }
 
   async function handleDisconnectGoogle() {
@@ -248,6 +270,10 @@ export default function CalendarPage() {
     setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1))
   }
 
+  const feedUrl = feedToken
+    ? `${import.meta.env.VITE_SUPABASE_URL as string}/functions/v1/calendar-feed?token=${feedToken}`
+    : null
+
   return (
     <div className="min-h-screen bg-app-bg">
       <header className="flex items-center justify-between border-b border-border-subtle bg-surface px-6 py-4">
@@ -300,6 +326,41 @@ export default function CalendarPage() {
 
       <main className="mx-auto max-w-5xl px-6 py-8">
         {error && <p className="mb-4 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{error}</p>}
+
+        <div className="mb-6 rounded-xl border border-border-subtle bg-surface p-4 shadow-card">
+          <h2 className="mb-2 text-sm font-semibold text-slate-900">Suscribirse a este calendario</h2>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              type="text"
+              readOnly
+              value={feedUrl ?? 'Cargando…'}
+              onFocus={(e) => e.currentTarget.select()}
+              className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-slate-50 px-3 py-1.5 text-sm text-slate-700"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => feedUrl && void handleCopyFeedUrl(feedUrl)}
+                disabled={!feedUrl}
+                className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {feedCopied ? 'Copiado ✓' : 'Copiar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRegenerateFeedToken()}
+                disabled={regeneratingFeed}
+                className="cursor-pointer whitespace-nowrap rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {regeneratingFeed ? 'Regenerando…' : 'Regenerar enlace'}
+              </button>
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-slate-400">
+            Este enlace es privado — no lo compartas. Cualquiera con el enlace puede ver tu calendario y todos los
+            tableros a los que perteneces.
+          </p>
+        </div>
 
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold capitalize text-slate-900">{monthLabel}</h2>

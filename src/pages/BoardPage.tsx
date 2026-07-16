@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -219,6 +219,9 @@ export default function BoardPage() {
       if (cancelled) return
       setCardCoverUrls(coverUrls)
 
+      let userBackgroundColor: string | null = null
+      let userBackgroundImage: string | null = null
+
       if (user) {
         const { data: memberRow, error: memberError } = await supabase
           .from('board_members')
@@ -231,6 +234,17 @@ export default function BoardPage() {
         if (!memberError) {
           setCurrentRole((memberRow?.role as BoardRole) ?? null)
         }
+
+        const { data: overrideRow } = await supabase
+          .from('user_board_backgrounds')
+          .select('background_color, background_image_path')
+          .eq('board_id', boardId)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (cancelled) return
+        userBackgroundColor = overrideRow?.background_color ?? null
+        userBackgroundImage = overrideRow?.background_image_path ?? null
       }
 
       const merged: ListWithCards[] = typedLists.map((list) => ({
@@ -238,7 +252,7 @@ export default function BoardPage() {
         cards: cardsData.filter((card) => card.list_id === list.id),
       }))
 
-      const typedBoard = boardData as Board
+      const typedBoard: Board = { ...(boardData as Board), userBackgroundColor, userBackgroundImage }
       setBoard(typedBoard)
       setNameDraft(typedBoard.name)
       setLists(merged)
@@ -254,7 +268,10 @@ export default function BoardPage() {
   }, [boardId, user])
 
   useEffect(() => {
-    const path = board?.background_image_path
+    // T083: the viewer's own background override (if set) wins per-property
+    // over the board's default -- here that means its image takes priority
+    // over the board's own background_image_path for which signed URL loads.
+    const path = board?.userBackgroundImage || board?.background_image_path
     if (!path) {
       setBackgroundImageUrl(null)
       return
@@ -278,7 +295,59 @@ export default function BoardPage() {
     return () => {
       cancelled = true
     }
-  }, [board?.background_image_path])
+  }, [board?.userBackgroundImage, board?.background_image_path])
+
+  // T085/T086: live cross-tab sync of card changes (esp. the complete
+  // checkmark) via Supabase Realtime. cards has no board_id column of its
+  // own (only list_id), so there's no server-side column filter to scope
+  // the subscription to this board -- filter client-side against this
+  // board's own list ids instead, kept fresh in a ref so the subscription
+  // callback (registered once per boardId) always sees current membership
+  // without needing to resubscribe every time `lists` changes.
+  const listIdsRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    listIdsRef.current = new Set(lists.map((l) => l.id))
+  }, [lists])
+
+  useEffect(() => {
+    if (!boardId) return
+
+    const channel = supabase
+      .channel(`board-${boardId}-cards`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cards' },
+        (payload) => {
+          const newCard = payload.new as Card | undefined
+          const oldCard = payload.old as Card | undefined
+          const relevantListId = newCard?.list_id ?? oldCard?.list_id
+          if (!relevantListId || !listIdsRef.current.has(relevantListId)) return
+
+          if (payload.eventType === 'DELETE' && oldCard) {
+            setLists((prev) => prev.map((l) => ({ ...l, cards: l.cards.filter((c) => c.id !== oldCard.id) })))
+            return
+          }
+          if (!newCard) return
+
+          setLists((prev) => {
+            const alreadyPresent = prev.some((l) => l.cards.some((c) => c.id === newCard.id))
+            if (payload.eventType === 'INSERT' && alreadyPresent) return prev // own optimistic insert already applied it
+
+            const withoutCard = prev.map((l) => ({ ...l, cards: l.cards.filter((c) => c.id !== newCard.id) }))
+            return withoutCard.map((l) =>
+              l.id === newCard.list_id
+                ? { ...l, cards: [...l.cards, newCard].sort((a, b) => a.position - b.position) }
+                : l,
+            )
+          })
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [boardId])
 
   async function handleRenameBoard() {
     if (!board) return
@@ -301,6 +370,12 @@ export default function BoardPage() {
 
   function handleBackgroundChange(
     updates: Partial<Pick<Board, 'background_color' | 'background_image_path'>>,
+  ) {
+    setBoard((prev) => (prev ? { ...prev, ...updates } : prev))
+  }
+
+  function handleUserBackgroundChange(
+    updates: Partial<Pick<Board, 'userBackgroundColor' | 'userBackgroundImage'>>,
   ) {
     setBoard((prev) => (prev ? { ...prev, ...updates } : prev))
   }
@@ -372,8 +447,13 @@ export default function BoardPage() {
     }
 
     const newCard = data as Card
-    setLists((prev) =>
-      prev.map((l) => (l.id === listId ? { ...l, cards: [...l.cards, newCard] } : l)),
+    setLists((prev) => {
+      // T085/T086's Realtime INSERT listener can race this: if the
+      // broadcast for this same row lands before this await resolves, it's
+      // already in `prev` -- skip re-appending it a second time.
+      if (prev.some((l) => l.cards.some((c) => c.id === newCard.id))) return prev
+      return prev.map((l) => (l.id === listId ? { ...l, cards: [...l.cards, newCard] } : l))
+    },
     )
   }
 
@@ -663,14 +743,18 @@ export default function BoardPage() {
     )
   }
 
-  const backgroundStyle: CSSProperties = board.background_image_path
+  // T083: per-CSS-property override -- the viewer's own color/image each
+  // fall back independently to the board's own default, not one-or-the-other.
+  const effectiveColor = board.userBackgroundColor || board.background_color
+  const effectiveImagePath = board.userBackgroundImage || board.background_image_path
+  const backgroundStyle: CSSProperties = effectiveImagePath
     ? {
-        backgroundColor: board.background_color,
+        backgroundColor: effectiveColor,
         backgroundImage: backgroundImageUrl ? `url(${backgroundImageUrl})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }
-    : { backgroundColor: board.background_color }
+    : { backgroundColor: effectiveColor }
 
   return (
     <div className="flex min-h-screen flex-col" style={backgroundStyle}>
@@ -738,15 +822,13 @@ export default function BoardPage() {
           >
             Miembros
           </button>
-          {isOwner && (
-            <button
-              type="button"
-              onClick={() => setShowBackgroundPanel(true)}
-              className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
-            >
-              Fondo
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowBackgroundPanel(true)}
+            className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+          >
+            Fondo
+          </button>
           <NotificationsBell buttonClassName="relative cursor-pointer rounded-lg bg-white/10 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20" />
         </div>
       </header>
@@ -857,11 +939,13 @@ export default function BoardPage() {
         />
       )}
 
-      {showBackgroundPanel && isOwner && (
+      {showBackgroundPanel && (
         <BackgroundPanel
           board={board}
+          isOwner={isOwner}
           onClose={() => setShowBackgroundPanel(false)}
           onBackgroundChange={handleBackgroundChange}
+          onUserBackgroundChange={handleUserBackgroundChange}
         />
       )}
     </div>

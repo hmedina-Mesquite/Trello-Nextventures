@@ -19,6 +19,11 @@ export interface Board {
   background_image_path: string | null
   created_at: string
   updated_at: string
+  // T080/T081: the current viewer's own per-board override, joined in from
+  // user_board_backgrounds -- separate from the board's own background_*
+  // columns above, which are the board-wide default every other member sees.
+  userBackgroundColor: string | null
+  userBackgroundImage: string | null
 }
 
 export interface List {
@@ -27,6 +32,11 @@ export interface List {
   name: string
   position: number
   created_at: string
+}
+
+export interface CardLocation {
+  lat: number
+  lng: number
 }
 
 export interface Card {
@@ -39,6 +49,7 @@ export interface Card {
   end_date: string | null
   cover_attachment_id: string | null
   complete: boolean
+  location_data: CardLocation | null
   created_at: string
   updated_at: string
 }
@@ -116,7 +127,7 @@ export interface BoardMemberWithProfile extends BoardMember {
   profiles: { username: string | null } | null
 }
 
-export type NotificationEventType = 'board_invite' | 'member_removed'
+export type NotificationEventType = 'board_invite' | 'member_removed' | 'task_completed'
 
 export interface Notification {
   id: string
