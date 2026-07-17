@@ -380,6 +380,17 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# calendar-feed (T090) is deliberately public: an external calendar app's
+# periodic ICS poll can't carry a Supabase session, so it authenticates via
+# its own token query param instead. Without this, the platform gateway
+# rejects every request with 401 UNAUTHORIZED_NO_AUTH_HEADER before the
+# function's own code -- which already validates the token itself -- ever
+# runs. The other three functions (google-oauth-exchange, google-calendar-
+# push/pull) deliberately keep the default JWT verification, since they use
+# withSupabase({ auth: 'user' }) and expect a real Supabase session.
+[functions.calendar-feed]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

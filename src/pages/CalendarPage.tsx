@@ -210,7 +210,7 @@ export default function CalendarPage() {
     })
   }
 
-  async function handleUpdate(cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete'>>) {
+  async function handleUpdate(cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete' | 'location_data'>>) {
     const { error: updateError } = await supabase.from('cards').update(updates).eq('id', cardId)
     if (updateError) {
       setError(updateError.message)

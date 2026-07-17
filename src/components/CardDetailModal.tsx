@@ -32,7 +32,7 @@ interface CardDetailModalProps {
   assignedLabelIds: string[]
   boardOwnerId: string
   onClose: (cardId: string) => void
-  onUpdate: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete'>>) => void
+  onUpdate: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete' | 'location_data'>>) => void
   onDelete: (cardId: string) => void
   onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
 }
@@ -52,6 +52,8 @@ export function CardDetailModal({
   const [description, setDescription] = useState(card.description ?? '')
   const [startDate, setStartDate] = useState(card.start_date)
   const [endDate, setEndDate] = useState(card.end_date)
+  const [locationData, setLocationData] = useState(card.location_data)
+  const [locatingMe, setLocatingMe] = useState(false)
   const [editingDescription, setEditingDescription] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
 
@@ -239,6 +241,23 @@ export function CardDetailModal({
     setEndDate(next)
     onUpdate(card.id, { end_date: next })
     void syncCardDatesToGoogle(card.id)
+  }
+
+  function handleLocationChange(next: { lat: number; lng: number } | null) {
+    setLocationData(next)
+    onUpdate(card.id, { location_data: next })
+  }
+
+  function handleUseMyLocation() {
+    if (!navigator.geolocation) return
+    setLocatingMe(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocatingMe(false)
+        handleLocationChange({ lat: position.coords.latitude, lng: position.coords.longitude })
+      },
+      () => setLocatingMe(false),
+    )
   }
 
   function commitDescription() {
@@ -573,6 +592,32 @@ export function CardDetailModal({
               Sin hora de fin: se trata como una fecha límite de todo el día.
             </span>
           )}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-slate-700">Ubicación:</span>
+            {locationData ? (
+              <>
+                <span className="text-slate-600">
+                  {locationData.lat.toFixed(5)}, {locationData.lng.toFixed(5)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleLocationChange(null)}
+                  className="cursor-pointer text-xs text-slate-400 transition-colors hover:text-danger"
+                >
+                  Quitar
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleUseMyLocation}
+                disabled={locatingMe}
+                className="cursor-pointer rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {locatingMe ? 'Obteniendo ubicación…' : 'Usar mi ubicación actual'}
+              </button>
+            )}
+          </div>
         </div>
 
         <label

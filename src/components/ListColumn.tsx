@@ -42,7 +42,7 @@ interface ListColumnProps {
   onRename: (listId: string, name: string) => void
   onDelete: (listId: string) => void
   onAddCard: (listId: string, title: string) => void
-  onUpdateCard: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete'>>) => void
+  onUpdateCard: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete' | 'location_data'>>) => void
   onDeleteCard: (cardId: string) => void
   onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
   onCardModalClose: (cardId: string) => void

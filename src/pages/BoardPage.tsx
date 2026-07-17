@@ -21,6 +21,26 @@ import { LabelsPanel } from '../components/LabelsPanel'
 import { MembersPanel } from '../components/MembersPanel'
 import { BackgroundPanel } from '../components/BackgroundPanel'
 import { NotificationsBell } from '../components/NotificationsBell'
+import { CardDetailModal } from '../components/CardDetailModal'
+import { TableView } from '../components/TableView'
+import { TimelineView } from '../components/TimelineView'
+import { PanelView } from '../components/PanelView'
+import { MapView } from '../components/MapView'
+
+type ViewMode = 'tablero' | 'tabla' | 'cronologia' | 'panel' | 'mapa'
+// Split around Calendario, the one tab in the screenshot's Tablero/Tabla/
+// Calendario/Cronología/Panel/Mapa order that navigates to a different page
+// (see the "Calendario reconciliation" note in goal.md) instead of being a
+// viewMode rendered inline like the rest.
+const VIEW_TABS_BEFORE_CALENDARIO: { key: ViewMode; label: string }[] = [
+  { key: 'tablero', label: 'Tablero' },
+  { key: 'tabla', label: 'Tabla' },
+]
+const VIEW_TABS_AFTER_CALENDARIO: { key: ViewMode; label: string }[] = [
+  { key: 'cronologia', label: 'Cronología' },
+  { key: 'panel', label: 'Panel' },
+  { key: 'mapa', label: 'Mapa' },
+]
 
 function computeFractionalPosition(prev: number | undefined, next: number | undefined): number {
   if (prev === undefined && next === undefined) return 1
@@ -114,6 +134,8 @@ export default function BoardPage() {
   const [activeCard, setActiveCard] = useState<Card | null>(null)
   const [activeList, setActiveList] = useState<ListWithCards | null>(null)
   const [cardCoverUrls, setCardCoverUrls] = useState<Record<string, string>>({})
+  const [viewMode, setViewMode] = useState<ViewMode>('tablero')
+  const [detailCardId, setDetailCardId] = useState<string | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const isOwner = currentRole === 'owner'
@@ -124,6 +146,10 @@ export default function BoardPage() {
       .map((labelId) => boardLabels.find((l) => l.id === labelId))
       .filter((l): l is Label => Boolean(l))
   }
+
+  const detailCard = detailCardId
+    ? lists.flatMap((l) => l.cards).find((c) => c.id === detailCardId) ?? null
+    : null
 
   useEffect(() => {
     if (!boardId) return
@@ -459,7 +485,7 @@ export default function BoardPage() {
 
   async function handleUpdateCard(
     cardId: string,
-    updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete'>>,
+    updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete' | 'location_data'>>,
   ) {
     const { error: updateError } = await supabase.from('cards').update(updates).eq('id', cardId)
     if (updateError) {
@@ -802,12 +828,6 @@ export default function BoardPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            to="/calendar"
-            className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
-          >
-            Calendario
-          </Link>
           <button
             type="button"
             onClick={() => setShowLabelsPanel(true)}
@@ -833,10 +853,48 @@ export default function BoardPage() {
         </div>
       </header>
 
+      <nav className="flex items-center gap-1 overflow-x-auto bg-black/15 px-6 py-2 backdrop-blur-sm">
+        {VIEW_TABS_BEFORE_CALENDARIO.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setViewMode(tab.key)}
+            className={`shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              viewMode === tab.key ? 'bg-white text-slate-900 shadow-sm' : 'text-white/80 hover:bg-white/10'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+        {/* T095: Calendario is deliberately the one tab that navigates away
+            instead of rendering inline -- it stays a global, all-boards view
+            (see goal.md's "Calendario reconciliation" note), not a per-board
+            viewMode like the rest. */}
+        <Link
+          to="/calendar"
+          className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/10"
+        >
+          Calendario
+        </Link>
+        {VIEW_TABS_AFTER_CALENDARIO.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setViewMode(tab.key)}
+            className={`shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              viewMode === tab.key ? 'bg-white text-slate-900 shadow-sm' : 'text-white/80 hover:bg-white/10'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
       {error && (
         <p className="bg-danger-light px-6 py-2 text-sm text-danger">{error}</p>
       )}
 
+      {viewMode === 'tablero' && (
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -919,6 +977,30 @@ export default function BoardPage() {
           ) : null}
         </DragOverlay>
       </DndContext>
+      )}
+
+      {viewMode === 'tabla' && (
+        <TableView lists={lists} cardLabelsByCardId={cardLabelsByCardId} onSelectCard={setDetailCardId} />
+      )}
+      {viewMode === 'cronologia' && <TimelineView lists={lists} onSelectCard={setDetailCardId} />}
+      {viewMode === 'panel' && <PanelView lists={lists} />}
+      {viewMode === 'mapa' && <MapView lists={lists} onSelectCard={setDetailCardId} />}
+
+      {detailCard && (
+        <CardDetailModal
+          card={detailCard}
+          boardLabels={boardLabels}
+          assignedLabelIds={cardLabelsByCardId[detailCard.id]?.map((l) => l.id) ?? []}
+          boardOwnerId={board.owner_id}
+          onClose={(cardId) => {
+            setDetailCardId(null)
+            void refreshCardCover(cardId)
+          }}
+          onUpdate={(cardId, updates) => void handleUpdateCard(cardId, updates)}
+          onDelete={(cardId) => void handleDeleteCard(cardId)}
+          onToggleLabel={(cardId, labelId, assign) => void handleToggleCardLabel(cardId, labelId, assign)}
+        />
+      )}
 
       {showLabelsPanel && (
         <LabelsPanel

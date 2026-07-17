@@ -5,7 +5,7 @@ import type { Card, Label } from '../types'
 import { CardDetailModal } from './CardDetailModal'
 import { formatCardDateRange } from '../lib/cardDates'
 
-type CardUpdate = Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete'>>
+type CardUpdate = Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete' | 'location_data'>>
 
 interface CardItemProps {
   card: Card
