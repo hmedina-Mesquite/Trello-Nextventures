@@ -17,6 +17,7 @@ import {
   listColumn,
   makeTestUser,
   openCard,
+  openCardField,
   openLabelsPanel,
   signUp,
 } from './fixtures'
@@ -95,6 +96,7 @@ test.describe('critical user flow', () => {
       await page.getByRole('button', { name: 'Cerrar' }).click()
 
       await openCard(page, 'Doing', 'Card A edited')
+      await openCardField(page, 'etiquetas')
       await page.getByRole('button', { name: 'Bug' }).click() // toggles assignment on
       await closeCardModal(page)
       await expect(cardItem(page, 'Doing', 'Card A edited').locator('span[title="Bug"]')).toBeVisible()
@@ -102,6 +104,7 @@ test.describe('critical user flow', () => {
 
     await test.step('add a checklist with items and toggle completion', async () => {
       await openCard(page, 'Doing', 'Card A edited')
+      await openCardField(page, 'checklist')
       await page.getByLabel('Título de la nueva lista de verificación').fill('Checklist 1')
       await page.getByRole('button', { name: 'Agregar lista de verificación' }).click()
 

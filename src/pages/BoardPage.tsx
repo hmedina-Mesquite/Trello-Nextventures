@@ -785,8 +785,8 @@ export default function BoardPage() {
     : { backgroundColor: effectiveColor }
 
   return (
-    <div className="flex min-h-screen flex-col" style={backgroundStyle}>
-      <header className="flex items-center justify-between gap-4 bg-black/25 px-6 py-4 backdrop-blur-sm">
+    <div className="flex h-screen flex-col overflow-hidden" style={backgroundStyle}>
+      <header className="flex flex-col gap-3 bg-black/25 px-4 py-3 backdrop-blur-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
         <div className="flex items-center gap-4">
           <Link
             to="/"
@@ -812,12 +812,12 @@ export default function BoardPage() {
                     setEditingName(false)
                   }
                 }}
-                className="rounded-lg bg-white/95 px-2 py-1 text-lg font-bold text-slate-900 shadow-sm"
+                className="min-w-0 flex-1 rounded-lg bg-white/95 px-2 py-1 text-lg font-bold text-slate-900 shadow-sm"
               />
             </>
           ) : (
             <h1
-              className={`rounded-lg px-2 py-1 text-lg font-bold text-white transition-colors ${
+              className={`min-w-0 truncate rounded-lg px-2 py-1 text-lg font-bold text-white transition-colors ${
                 isOwner ? 'cursor-text hover:bg-white/10' : ''
               }`}
               onClick={() => {
@@ -829,40 +829,43 @@ export default function BoardPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* flex-wrap: at phone width the 5 buttons can't fit one row without
+            clipping or shrinking below a usable tap target, so they wrap to a
+            second line instead; min-h-10 keeps every button >=40px tall for touch. */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowLabelsPanel(true)}
-            className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+            className="min-h-10 cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
             Etiquetas
           </button>
           <button
             type="button"
             onClick={() => setShowMembersPanel(true)}
-            className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+            className="min-h-10 cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
             Miembros
           </button>
           <button
             type="button"
             onClick={() => setShowBackgroundPanel(true)}
-            className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+            className="min-h-10 cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
             Fondo
           </button>
           <button
             type="button"
             onClick={() => setShowIntegrationsPanel(true)}
-            className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+            className="min-h-10 cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
             Integraciones
           </button>
-          <NotificationsBell buttonClassName="relative cursor-pointer rounded-lg bg-white/10 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20" />
+          <NotificationsBell buttonClassName="relative min-h-10 cursor-pointer rounded-lg bg-white/10 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20" />
         </div>
       </header>
 
-      <nav className="flex items-center gap-1 overflow-x-auto bg-black/15 px-6 py-2 backdrop-blur-sm">
+      <nav className="flex items-center gap-1 overflow-x-auto bg-black/15 px-4 py-2 backdrop-blur-sm sm:px-6">
         {VIEW_TABS_BEFORE_CALENDARIO.map((tab) => (
           <button
             key={tab.key}
@@ -923,7 +926,11 @@ export default function BoardPage() {
               that far reveals plain white body background past the board's
               edge. relative here makes this div the containing block instead,
               so nothing escapes its own overflow-x-auto clipping. */}
-          <div className="relative flex flex-1 items-start gap-4 overflow-x-auto p-4">
+          {/* min-h-0: a flex-1 child in a flex-column parent still grows to
+              fit its content's intrinsic height unless min-h-0 caps it --
+              without it this row (and the page around it) would grow with
+              the tallest list instead of scrolling internally. */}
+          <div className="relative flex flex-1 min-h-0 items-stretch gap-4 overflow-x-auto p-4">
             {lists.map((list) => (
               <ListColumn
                 key={list.id}
@@ -946,7 +953,7 @@ export default function BoardPage() {
 
             <form
               onSubmit={handleCreateList}
-              className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-xl bg-black/20 p-3 backdrop-blur-sm"
+              className="flex w-[85vw] max-w-xs flex-shrink-0 flex-col gap-2 rounded-xl bg-black/20 p-3 backdrop-blur-sm sm:w-72"
             >
               <label htmlFor="new-list-name" className="sr-only">
                 Nombre de la nueva lista

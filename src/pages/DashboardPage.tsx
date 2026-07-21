@@ -93,14 +93,14 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-app-bg">
-      <header className="flex items-center justify-between border-b border-border-subtle bg-surface px-6 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-y-2 border-b border-border-subtle bg-surface px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
             T
           </div>
           <h1 className="text-lg font-bold text-slate-900">Tus tableros</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-4">
           <Link
             to="/calendar"
             className="text-sm font-medium text-slate-600 transition-colors hover:text-primary"
@@ -113,19 +113,19 @@ export default function DashboardPage() {
           >
             Documentación
           </Link>
-          {user && <span className="text-sm text-slate-400">{user.email}</span>}
+          {user && <span className="hidden text-sm text-slate-400 sm:inline">{user.email}</span>}
           <NotificationsBell />
           <button
             type="button"
             onClick={() => void signOut()}
-            className="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
+            className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
           >
             Cerrar sesión
           </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         {error && (
           <p className="mb-4 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{error}</p>
         )}
@@ -146,7 +146,7 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => void handleDeleteBoard(board)}
-                    className="absolute right-2 top-2 hidden cursor-pointer rounded-lg bg-black/30 px-1.5 py-1 text-xs text-white transition-colors hover:bg-black/50 group-hover:block"
+                    className="absolute right-2 top-2 flex cursor-pointer rounded-lg bg-black/30 px-2 py-1.5 text-xs text-white transition-colors hover:bg-black/50 sm:hidden sm:group-hover:flex"
                     aria-label={`Eliminar tablero ${board.name}`}
                     title="Eliminar tablero"
                   >

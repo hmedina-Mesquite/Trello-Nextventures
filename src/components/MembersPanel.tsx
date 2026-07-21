@@ -126,11 +126,11 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-md rounded-2xl bg-surface p-6 shadow-elevated"
+        className="mt-4 w-full max-w-md rounded-2xl bg-surface p-4 shadow-elevated sm:mt-10 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -138,7 +138,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
@@ -154,9 +154,9 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
             {members.map((member) => (
               <li
                 key={member.user_id}
-                className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle px-3 py-2"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-subtle px-3 py-2"
               >
-                <span className="text-sm text-slate-800">
+                <span className="min-w-0 break-words text-sm text-slate-800">
                   {member.profiles?.username ?? '(usuario desconocido)'}
                   {member.user_id === currentUserId && (
                     <span className="ml-1 text-xs text-slate-400">(tú)</span>
@@ -172,7 +172,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                         id={`role-${member.user_id}`}
                         value={member.role}
                         onChange={(e) => void handleRoleChange(member.user_id, e.target.value as BoardRole)}
-                        className="cursor-pointer rounded-lg border border-border-subtle px-1.5 py-1 text-xs text-slate-700"
+                        className="cursor-pointer rounded-lg border border-border-subtle px-1.5 py-1.5 text-xs text-slate-700"
                       >
                         <option value="owner">Propietario</option>
                         <option value="member">Miembro</option>
@@ -180,7 +180,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                       <button
                         type="button"
                         onClick={() => void handleRemove(member.user_id)}
-                        className="cursor-pointer rounded-lg px-1.5 py-1 text-xs text-danger transition-colors hover:bg-danger-light"
+                        className="cursor-pointer rounded-lg px-2 py-1.5 text-xs text-danger transition-colors hover:bg-danger-light"
                       >
                         Quitar
                       </button>
@@ -192,7 +192,7 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
                     <button
                       type="button"
                       onClick={() => void handleLeave()}
-                      className="cursor-pointer rounded-lg px-1.5 py-1 text-xs text-danger transition-colors hover:bg-danger-light"
+                      className="cursor-pointer rounded-lg px-2 py-1.5 text-xs text-danger transition-colors hover:bg-danger-light"
                     >
                       Salir del tablero
                     </button>
@@ -208,19 +208,19 @@ export function MembersPanel({ boardId, currentUserId, isOwner, onClose, onLeave
             <label htmlFor="invite-username" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Invitar por nombre de usuario o correo
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 id="invite-username"
                 type="text"
                 value={inviteUsername}
                 onChange={(e) => setInviteUsername(e.target.value)}
                 placeholder="nombre de usuario o correo"
-                className="flex-1 rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="min-w-0 rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:flex-1"
               />
               <button
                 type="submit"
                 disabled={inviting || !inviteUsername.trim()}
-                className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Invitar
               </button>

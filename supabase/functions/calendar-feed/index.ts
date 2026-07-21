@@ -53,7 +53,7 @@ function buildIcs(cards: FeedCard[], listNameById: Map<string, string>, boardNam
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Trello Clone//Calendar Feed//ES',
+    'PRODID:-//Task Management System//Calendar Feed//ES',
     'CALSCALE:GREGORIAN',
   ]
 
@@ -63,7 +63,7 @@ function buildIcs(cards: FeedCard[], listNameById: Map<string, string>, boardNam
     const descriptionParts = [boardName, listName, card.description].filter(Boolean)
 
     lines.push('BEGIN:VEVENT')
-    lines.push(`UID:${card.id}@trello.local`)
+    lines.push(`UID:${card.id}@tams.local`)
     lines.push(`SUMMARY:${escapeIcsText(card.title)}`)
 
     if (card.end_date) {
@@ -105,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
   const boardIds = (memberRows ?? []).map((r) => r.board_id as string)
   if (boardIds.length === 0) {
     return new Response(buildIcs([], new Map(), new Map()), {
-      headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'attachment; filename="trello-feed.ics"' },
+      headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'attachment; filename="tams-feed.ics"' },
     })
   }
 
@@ -121,7 +121,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   if (listIds.length === 0) {
     return new Response(buildIcs([], new Map(), new Map()), {
-      headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'attachment; filename="trello-feed.ics"' },
+      headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'attachment; filename="tams-feed.ics"' },
     })
   }
 
@@ -136,7 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
   return new Response(ics, {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': 'attachment; filename="trello-feed.ics"',
+      'Content-Disposition': 'attachment; filename="tams-feed.ics"',
     },
   })
 }

@@ -73,7 +73,7 @@ function toAllDayEvent(title: string, startDate: string) {
   end.setUTCDate(end.getUTCDate() + 1)
   return {
     summary: title,
-    description: 'Sincronizado automáticamente desde el tablero Trello.',
+    description: 'Sincronizado automáticamente desde el tablero de Task Management System.',
     start: { date: day },
     end: { date: end.toISOString().slice(0, 10) },
   }
@@ -83,7 +83,7 @@ function toAllDayEvent(title: string, startDate: string) {
 function toTimedEvent(title: string, startDate: string, endDate: string) {
   return {
     summary: title,
-    description: 'Sincronizado automáticamente desde el tablero Trello.',
+    description: 'Sincronizado automáticamente desde el tablero de Task Management System.',
     start: { dateTime: startDate },
     end: { dateTime: endDate },
   }

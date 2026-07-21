@@ -129,6 +129,21 @@ export async function closeCardModal(page: Page) {
   await page.getByRole('button', { name: 'Cerrar' }).click()
 }
 
+/**
+ * Inicio/Fin/Ubicación/Etiquetas/Lista de verificación are collapsed by
+ * default inside the card modal (T130) -- their content isn't interactable
+ * until the matching toggle button is opened. Scoped by `aria-controls`
+ * rather than accessible name, since e.g. "Etiquetas" also names the
+ * board-level labels-panel button that's simultaneously present in the DOM
+ * whenever the card modal is open.
+ */
+export async function openCardField(
+  page: Page,
+  field: 'inicio' | 'fin' | 'ubicacion' | 'etiquetas' | 'checklist',
+) {
+  await page.locator(`button[aria-controls="card-field-panel-${field}"]`).click()
+}
+
 export async function openLabelsPanel(page: Page) {
   await page.getByRole('button', { name: 'Etiquetas' }).click()
   await expect(page.getByRole('heading', { name: 'Etiquetas' })).toBeVisible()

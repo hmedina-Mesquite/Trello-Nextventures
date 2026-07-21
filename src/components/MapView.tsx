@@ -82,11 +82,14 @@ export function MapView({ lists, onSelectCard }: MapViewProps) {
   }, [locatedKey])
 
   return (
-    <div className="p-4">
+    <div className="p-3 sm:p-4">
       <div className="relative">
-        <div ref={containerRef} className="h-[28rem] w-full rounded-xl border border-border-subtle shadow-card" />
+        <div
+          ref={containerRef}
+          className="h-[20rem] w-full rounded-xl border border-border-subtle shadow-card sm:h-[28rem]"
+        />
         {located.length === 0 && (
-          <div className="pointer-events-none absolute inset-0 z-[1000] flex flex-col items-center justify-center gap-2 rounded-xl bg-surface/90 text-center text-slate-400">
+          <div className="pointer-events-none absolute inset-0 z-[1000] flex flex-col items-center justify-center gap-2 rounded-xl bg-surface/90 px-4 text-center text-slate-400">
             <p className="text-sm">No hay tarjetas con ubicación.</p>
             <p className="text-xs">Abre una tarjeta y usa "Ubicación" para agregarle una.</p>
           </div>

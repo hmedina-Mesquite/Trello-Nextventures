@@ -10,6 +10,17 @@ function dayFloor(iso: string): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
+function formatDay(d: Date): string {
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+}
+
+function formatDateRange(card: Card): string {
+  const start = dayFloor(card.start_date!)
+  const end = card.end_date ? dayFloor(card.end_date) : null
+  if (!end || end.getTime() === start.getTime()) return formatDay(start)
+  return `${formatDay(start)} → ${formatDay(end)}`
+}
+
 interface TimelineViewProps {
   lists: ListWithCards[]
   onSelectCard: (cardId: string) => void
@@ -51,48 +62,86 @@ export function TimelineView({ lists, onSelectCard }: TimelineViewProps) {
   const gridTemplateRows = `auto repeat(${lists.length}, minmax(44px, auto))`
 
   return (
-    <div className="overflow-x-auto p-4">
+    <div className="p-4">
       {lists.length === 0 ? (
-        <p className="p-4 text-sm text-slate-400">Este tablero no tiene listas todavía.</p>
+        <p className="text-sm text-slate-400">Este tablero no tiene listas todavía.</p>
       ) : (
-        <div
-          className="grid rounded-xl border border-border-subtle bg-surface shadow-card"
-          style={{ gridTemplateColumns, gridTemplateRows, minWidth: LABEL_COL_PX + numDays * DAY_COL_PX }}
-        >
-          <div className="sticky left-0 z-10 border-b border-r border-border-subtle bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500" style={{ gridColumn: 1, gridRow: 1 }}>
-            Lista
+        <>
+          <div className="hidden overflow-x-auto sm:block">
+            <div
+              className="grid rounded-xl border border-border-subtle bg-surface shadow-card"
+              style={{ gridTemplateColumns, gridTemplateRows, minWidth: LABEL_COL_PX + numDays * DAY_COL_PX }}
+            >
+              <div className="sticky left-0 z-10 border-b border-r border-border-subtle bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500" style={{ gridColumn: 1, gridRow: 1 }}>
+                Lista
+              </div>
+              {days.map((day, i) => (
+                <div
+                  key={i}
+                  className="border-b border-border-subtle bg-slate-50 py-2 text-center text-[10px] font-medium text-slate-500"
+                  style={{ gridColumn: i + 2, gridRow: 1 }}
+                >
+                  {formatDay(day)}
+                </div>
+              ))}
+
+              {lists.map((list, r) => (
+                <div
+                  key={`label-${list.id}`}
+                  className="sticky left-0 z-10 flex items-center border-b border-r border-border-subtle bg-surface px-3 py-2 text-sm font-medium text-slate-700"
+                  style={{ gridColumn: 1, gridRow: r + 2 }}
+                >
+                  {list.name}
+                </div>
+              ))}
+              {lists.map((list, r) => (
+                <div
+                  key={`track-${list.id}`}
+                  className="border-b border-border-subtle"
+                  style={{ gridColumn: `2 / span ${numDays}`, gridRow: r + 2 }}
+                />
+              ))}
+
+              {datedCards.map(({ card, listId }) => (
+                <TimelineBar key={card.id} card={card} listRowIndex={lists.findIndex((l) => l.id === listId)} dayIndexOf={dayIndexOf} onSelectCard={onSelectCard} />
+              ))}
+            </div>
           </div>
-          {days.map((day, i) => (
-            <div
-              key={i}
-              className="border-b border-border-subtle bg-slate-50 py-2 text-center text-[10px] font-medium text-slate-500"
-              style={{ gridColumn: i + 2, gridRow: 1 }}
-            >
-              {day.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
-            </div>
-          ))}
 
-          {lists.map((list, r) => (
-            <div
-              key={`label-${list.id}`}
-              className="sticky left-0 z-10 flex items-center border-b border-r border-border-subtle bg-surface px-3 py-2 text-sm font-medium text-slate-700"
-              style={{ gridColumn: 1, gridRow: r + 2 }}
-            >
-              {list.name}
-            </div>
-          ))}
-          {lists.map((list, r) => (
-            <div
-              key={`track-${list.id}`}
-              className="border-b border-border-subtle"
-              style={{ gridColumn: `2 / span ${numDays}`, gridRow: r + 2 }}
-            />
-          ))}
-
-          {datedCards.map(({ card, listId }) => (
-            <TimelineBar key={card.id} card={card} listRowIndex={lists.findIndex((l) => l.id === listId)} dayIndexOf={dayIndexOf} onSelectCard={onSelectCard} />
-          ))}
-        </div>
+          <div className="sm:hidden">
+            {datedCards.length === 0 ? (
+              <p className="text-sm text-slate-400">No hay tarjetas con fecha en este tablero.</p>
+            ) : (
+              <div className="space-y-4">
+                {lists.map((list) => {
+                  const cardsWithDates = list.cards.filter((c) => c.start_date)
+                  if (cardsWithDates.length === 0) return null
+                  return (
+                    <div key={list.id} className="overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-card">
+                      <div className="border-b border-border-subtle bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        {list.name}
+                      </div>
+                      <ul className="divide-y divide-border-subtle">
+                        {cardsWithDates.map((card) => (
+                          <li key={card.id}>
+                            <button
+                              type="button"
+                              onClick={() => onSelectCard(card.id)}
+                              className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left"
+                            >
+                              <span className={`text-sm font-medium text-slate-700 ${card.complete ? 'line-through' : ''}`}>{card.title}</span>
+                              <span className="text-xs text-slate-500">{formatDateRange(card)}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   )

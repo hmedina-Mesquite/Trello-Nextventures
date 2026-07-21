@@ -34,11 +34,11 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-sm rounded-2xl bg-surface p-6 shadow-elevated"
+        className="mt-4 w-full max-w-sm rounded-2xl bg-surface p-4 shadow-elevated sm:mt-10 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -46,7 +46,7 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
@@ -67,7 +67,7 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
               <button
                 type="button"
                 onClick={() => onDelete(label.id)}
-                className="cursor-pointer rounded-lg bg-black/20 px-1.5 py-0.5 text-xs text-white transition-colors hover:bg-black/40"
+                className="cursor-pointer rounded-lg bg-black/20 px-2 py-1 text-xs text-white transition-colors hover:bg-black/40"
                 aria-label={`Eliminar etiqueta ${label.name}`}
                 title="Eliminar etiqueta"
               >
@@ -87,7 +87,7 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nombre de la etiqueta"
-            className="rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <div className="flex flex-wrap gap-1.5">
             {LABEL_COLORS.map((c) => (
@@ -105,7 +105,7 @@ export function LabelsPanel({ labels, onClose, onCreate, onDelete }: LabelsPanel
           <button
             type="submit"
             disabled={!name.trim()}
-            className="self-start cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="self-start cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             Agregar etiqueta
           </button>

@@ -27,6 +27,7 @@ import {
   createBoard,
   makeTestUser,
   openCard,
+  openCardField,
   openLabelsPanel,
   openMembersPanel,
   signUp,
@@ -95,6 +96,7 @@ test.describe('owner vs member permissions', () => {
         await memberPage.getByRole('button', { name: 'Cerrar' }).click()
 
         await openCard(memberPage, 'Member List', 'Member Card edited')
+        await openCardField(memberPage, 'etiquetas')
         await memberPage.getByRole('button', { name: 'Member Label', exact: true }).click()
         // exact: true -- once assigned, the underlying CardItem's label pill
         // (a childless <span title="Member Label">) folds that title into
@@ -108,6 +110,7 @@ test.describe('owner vs member permissions', () => {
 
       await test.step('member can add a checklist and toggle items, and add/delete a comment', async () => {
         await openCard(memberPage, 'Member List', 'Member Card edited')
+        await openCardField(memberPage, 'checklist')
         await memberPage.getByLabel('Título de la nueva lista de verificación').fill('Member Checklist')
         await memberPage.getByRole('button', { name: 'Agregar lista de verificación' }).click()
         await memberPage.getByPlaceholder('Agregar un elemento').fill('Member Item')

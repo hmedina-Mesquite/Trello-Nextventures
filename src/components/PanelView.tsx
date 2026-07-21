@@ -21,9 +21,9 @@ export function PanelView({ lists }: PanelViewProps) {
         <p className="mt-1 text-3xl font-bold text-slate-900">{total}</p>
         <div className="mt-3 flex flex-col gap-1">
           {lists.map((list) => (
-            <div key={list.id} className="flex items-center justify-between text-xs text-slate-500">
-              <span className="truncate">{list.name}</span>
-              <span className="font-medium text-slate-700">{list.cards.length}</span>
+            <div key={list.id} className="flex items-center justify-between gap-2 text-xs text-slate-500">
+              <span className="min-w-0 truncate">{list.name}</span>
+              <span className="shrink-0 font-medium text-slate-700">{list.cards.length}</span>
             </div>
           ))}
         </div>

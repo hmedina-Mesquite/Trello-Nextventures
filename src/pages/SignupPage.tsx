@@ -66,7 +66,7 @@ export default function SignupPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
             T
           </div>
-          <span className="text-lg font-bold text-slate-900">Trello</span>
+          <span className="text-lg font-bold text-slate-900">TAMS</span>
         </div>
         <h1 className="mb-6 text-center text-xl font-semibold text-slate-900">Registrarse</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

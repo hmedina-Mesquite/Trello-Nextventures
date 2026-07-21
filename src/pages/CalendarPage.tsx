@@ -276,7 +276,7 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-app-bg">
-      <header className="flex items-center justify-between border-b border-border-subtle bg-surface px-6 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-y-2 border-b border-border-subtle bg-surface px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center gap-4">
           <Link
             to="/"
@@ -286,7 +286,7 @@ export default function CalendarPage() {
           </Link>
           <h1 className="text-lg font-bold text-slate-900">Calendario</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {googleStatus.connected ? (
             <>
               <span className="text-sm text-slate-500">
@@ -296,14 +296,14 @@ export default function CalendarPage() {
                 type="button"
                 onClick={() => void handleManualSync()}
                 disabled={syncing}
-                className="cursor-pointer rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {syncing ? 'Sincronizando…' : 'Sincronizar ahora'}
               </button>
               <button
                 type="button"
                 onClick={() => void handleDisconnectGoogle()}
-                className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100"
+                className="cursor-pointer rounded-lg px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100"
               >
                 Desconectar
               </button>
@@ -311,7 +311,7 @@ export default function CalendarPage() {
           ) : isGoogleConfigured() ? (
             <a
               href={buildGoogleAuthUrl()}
-              className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+              className="cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
             >
               Conectar Google Calendar
             </a>
@@ -324,7 +324,7 @@ export default function CalendarPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         {error && <p className="mb-4 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{error}</p>}
 
         <div className="mb-6 rounded-xl border border-border-subtle bg-surface p-4 shadow-card">
@@ -342,7 +342,7 @@ export default function CalendarPage() {
                 type="button"
                 onClick={() => feedUrl && void handleCopyFeedUrl(feedUrl)}
                 disabled={!feedUrl}
-                className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {feedCopied ? 'Copiado ✓' : 'Copiar'}
               </button>
@@ -350,7 +350,7 @@ export default function CalendarPage() {
                 type="button"
                 onClick={() => void handleRegenerateFeedToken()}
                 disabled={regeneratingFeed}
-                className="cursor-pointer whitespace-nowrap rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer whitespace-nowrap rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {regeneratingFeed ? 'Regenerando…' : 'Regenerar enlace'}
               </button>
@@ -362,21 +362,21 @@ export default function CalendarPage() {
           </p>
         </div>
 
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-y-2">
           <h2 className="text-lg font-semibold capitalize text-slate-900">{monthLabel}</h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => changeMonth(-1)}
               aria-label="Mes anterior"
-              className="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
             >
               ‹
             </button>
             <button
               type="button"
               onClick={() => setViewDate(new Date())}
-              className="cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
+              className="cursor-pointer rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
             >
               Hoy
             </button>
@@ -384,7 +384,7 @@ export default function CalendarPage() {
               type="button"
               onClick={() => changeMonth(1)}
               aria-label="Mes siguiente"
-              className="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
             >
               ›
             </button>
@@ -399,7 +399,7 @@ export default function CalendarPage() {
               {WEEKDAY_LABELS.map((label) => (
                 <div
                   key={label}
-                  className="bg-slate-50 px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  className="bg-slate-50 px-0.5 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:px-2 sm:text-xs"
                 >
                   {label}
                 </div>
@@ -417,7 +417,7 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={key}
-                    className={`flex min-h-[110px] flex-col gap-1 p-1.5 ${inMonth ? 'bg-white' : 'bg-slate-50'}`}
+                    className={`flex min-h-[72px] flex-col gap-1 p-1 sm:min-h-[110px] sm:p-1.5 ${inMonth ? 'bg-white' : 'bg-slate-50'}`}
                   >
                     <span
                       className={`self-end text-xs font-medium ${
@@ -437,7 +437,7 @@ export default function CalendarPage() {
                           type="button"
                           onClick={() => void handleSelectCard(card)}
                           title={card.title}
-                          className="cursor-pointer truncate rounded-md bg-primary-light px-1.5 py-0.5 text-left text-xs font-medium text-primary transition-colors hover:bg-primary hover:text-white"
+                          className="cursor-pointer truncate rounded-md bg-primary-light px-1 py-0.5 text-left text-[10px] font-medium text-primary transition-colors hover:bg-primary hover:text-white sm:px-1.5 sm:text-xs"
                         >
                           {card.end_date && (
                             <span className="mr-1 opacity-80">

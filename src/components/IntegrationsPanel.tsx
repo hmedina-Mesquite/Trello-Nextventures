@@ -216,11 +216,11 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-lg rounded-2xl bg-surface p-6 shadow-elevated"
+        className="mt-4 w-full max-w-lg rounded-2xl bg-surface p-4 shadow-elevated sm:mt-10 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
@@ -228,7 +228,7 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
@@ -243,18 +243,18 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
             URL base de la API (no es la URL de esta app)
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="text"
               readOnly
               value={API_BASE_URL}
               onFocus={(e) => e.currentTarget.select()}
-              className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-white px-2 py-1 font-mono text-xs text-slate-800"
+              className="min-w-0 truncate rounded-lg border border-border-subtle bg-white px-2 py-2 font-mono text-xs text-slate-800 sm:flex-1"
             />
             <button
               type="button"
               onClick={() => void handleCopyBaseUrl()}
-              className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-2 py-1 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+              className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-2 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
             >
               {baseUrlCopied ? 'Copiado ✓' : 'Copiar'}
             </button>
@@ -279,19 +279,19 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
               <label htmlFor="new-api-key-label" className="text-xs font-medium text-slate-600">
                 Etiqueta de la nueva clave
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   id="new-api-key-label"
                   type="text"
                   value={newKeyLabel}
                   onChange={(e) => setNewKeyLabel(e.target.value)}
                   placeholder="p. ej. integración con Zapier"
-                  className="flex-1 rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="min-w-0 rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:flex-1"
                 />
                 <button
                   type="submit"
                   disabled={generatingKey || !newKeyLabel.trim()}
-                  className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {generatingKey ? 'Generando…' : 'Generar nueva clave API'}
                 </button>
@@ -304,18 +304,18 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
               <p className="text-xs font-medium text-slate-700">
                 Copia esta clave ahora: no volverás a verla completa después de cerrar este panel.
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"
                   readOnly
                   value={generatedKey.api_key}
                   onFocus={(e) => e.currentTarget.select()}
-                  className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-white px-2 py-1.5 font-mono text-sm text-slate-700"
+                  className="min-w-0 truncate rounded-lg border border-border-subtle bg-white px-2 py-2 font-mono text-sm text-slate-700 sm:flex-1"
                 />
                 <button
                   type="button"
                   onClick={() => void handleCopyKey()}
-                  className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+                  className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
                 >
                   {keyCopied ? 'Copiado ✓' : 'Copiar'}
                 </button>
@@ -333,7 +333,7 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
                 return (
                   <li
                     key={key.id}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle px-3 py-2"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-subtle px-3 py-2"
                   >
                     <div className="min-w-0">
                       <p className="truncate font-mono text-sm text-slate-800">{key.key_prefix}…</p>
@@ -356,7 +356,7 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
                           type="button"
                           onClick={() => void handleRevokeKey(key.id)}
                           disabled={revokingKeyId === key.id}
-                          className="cursor-pointer rounded-lg px-1.5 py-1 text-xs text-danger transition-colors hover:bg-danger-light disabled:cursor-not-allowed disabled:opacity-50"
+                          className="cursor-pointer rounded-lg px-2 py-1.5 text-xs text-danger transition-colors hover:bg-danger-light disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {revokingKeyId === key.id ? 'Revocando…' : 'Revocar'}
                         </button>
@@ -382,19 +382,19 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
               <label htmlFor="new-webhook-url" className="text-xs font-medium text-slate-600">
                 URL del endpoint (debe empezar con https://)
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   id="new-webhook-url"
                   type="url"
                   value={newWebhookUrl}
                   onChange={(e) => setNewWebhookUrl(e.target.value)}
                   placeholder="https://ejemplo.com/webhook"
-                  className="flex-1 rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="min-w-0 rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:flex-1"
                 />
                 <button
                   type="submit"
                   disabled={registeringWebhook || !newWebhookUrl.trim()}
-                  className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {registeringWebhook ? 'Registrando…' : 'Registrar'}
                 </button>
@@ -412,7 +412,7 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
               {webhooks.map((endpoint) => (
                 <li
                   key={endpoint.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle px-3 py-2"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border-subtle px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm text-slate-800">{endpoint.target_url}</p>
@@ -433,7 +433,7 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
                         type="button"
                         onClick={() => void handleToggleWebhook(endpoint)}
                         disabled={togglingWebhookId === endpoint.id}
-                        className="cursor-pointer rounded-lg px-1.5 py-1 text-xs text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="cursor-pointer rounded-lg px-2 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {togglingWebhookId === endpoint.id
                           ? 'Guardando…'
@@ -454,7 +454,7 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
                 type="button"
                 onClick={() => void handleTestDelivery()}
                 disabled={testingWebhooks}
-                className="cursor-pointer self-start rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer self-start rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {testingWebhooks ? 'Probando…' : 'Probar entrega de webhooks'}
               </button>

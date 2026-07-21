@@ -142,11 +142,11 @@ export function BackgroundPanel({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="mt-10 w-full max-w-sm rounded-2xl bg-surface p-6 shadow-elevated"
+        className="mt-4 w-full max-w-sm rounded-2xl bg-surface p-4 shadow-elevated sm:mt-10 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -154,7 +154,7 @@ export function BackgroundPanel({
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
@@ -169,19 +169,19 @@ export function BackgroundPanel({
               <label htmlFor="background-color" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Color sólido (todo el tablero)
               </label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <input
                   id="background-color"
                   type="color"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
-                  className="h-9 w-14 cursor-pointer rounded-lg border border-border-subtle"
+                  className="h-11 w-14 cursor-pointer rounded-lg border border-border-subtle"
                 />
                 <button
                   type="button"
                   onClick={() => void handleApplyColor()}
                   disabled={applyingColor}
-                  className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                  className="cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {applyingColor ? 'Aplicando…' : 'Aplicar color'}
                 </button>
@@ -198,7 +198,7 @@ export function BackgroundPanel({
                 accept="image/*"
                 onChange={(e) => void handleFileChange(e)}
                 disabled={uploading}
-                className="text-sm text-slate-700 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 file:transition-colors hover:file:bg-slate-200"
+                className="text-sm text-slate-700 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 file:transition-colors hover:file:bg-slate-200"
               />
               {uploading && <p className="text-sm text-slate-500">Subiendo imagen…</p>}
             </div>
@@ -219,19 +219,19 @@ export function BackgroundPanel({
             <label htmlFor="my-background-color" className="text-xs font-medium text-slate-600">
               Color
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 id="my-background-color"
                 type="color"
                 value={myColor}
                 onChange={(e) => setMyColor(e.target.value)}
-                className="h-9 w-14 cursor-pointer rounded-lg border border-border-subtle"
+                className="h-11 w-14 cursor-pointer rounded-lg border border-border-subtle"
               />
               <button
                 type="button"
                 onClick={() => void handleApplyMyColor()}
                 disabled={savingMyColor}
-                className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingMyColor ? 'Aplicando…' : 'Aplicar'}
               </button>
@@ -240,7 +240,7 @@ export function BackgroundPanel({
                   type="button"
                   onClick={() => void handleClearMyColor()}
                   disabled={savingMyColor}
-                  className="cursor-pointer rounded-lg px-2 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100"
+                  className="cursor-pointer rounded-lg px-2 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100"
                 >
                   Quitar
                 </button>
@@ -258,7 +258,7 @@ export function BackgroundPanel({
               accept="image/*"
               onChange={(e) => void handleMyFileChange(e)}
               disabled={uploadingMyImage}
-              className="text-sm text-slate-700 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700 file:transition-colors hover:file:bg-slate-200"
+              className="text-sm text-slate-700 file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 file:transition-colors hover:file:bg-slate-200"
             />
             {uploadingMyImage && <p className="text-sm text-slate-500">Subiendo imagen…</p>}
             {board.userBackgroundImage && (

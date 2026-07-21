@@ -1,4 +1,4 @@
-# Trello clone
+# Task Management System (TAMS)
 
 React + TypeScript + Vite frontend on a Supabase backend (Postgres + Auth + RLS).
 

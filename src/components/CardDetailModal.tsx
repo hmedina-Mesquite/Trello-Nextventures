@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
+import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { sanitizeFileName } from '../lib/storage'
 import { isImageAttachment } from '../lib/attachments'
@@ -7,6 +7,11 @@ import { linkifyText } from '../lib/linkify'
 import { syncCardDatesToGoogle } from '../lib/googleCalendar'
 import { fromDatetimeLocalValue, toAllDayNoonUtc, toDatetimeLocalValue } from '../lib/cardDates'
 import { useAuth } from '../contexts/AuthContext'
+import startDateIcon from '../assets/icons/start-date.svg'
+import endDateIcon from '../assets/icons/end-date.svg'
+import locationIcon from '../assets/icons/location.svg'
+import labelsIcon from '../assets/icons/labels.svg'
+import checklistIcon from '../assets/icons/checklist.svg'
 import type {
   Attachment,
   Card,
@@ -24,6 +29,82 @@ function formatFileSize(bytes: number | null): string {
   if (bytes === null) return ''
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+type CollapsibleField = 'inicio' | 'fin' | 'ubicacion' | 'etiquetas' | 'checklist'
+
+function FieldIcon({ icon }: { icon: string }) {
+  return <img src={icon} alt="" aria-hidden="true" className="h-5 w-5" />
+}
+
+interface FieldToggleButtonProps {
+  icon: string
+  label: string
+  isOpen: boolean
+  hasData: boolean
+  badgeCount?: number
+  controlsId: string
+  onClick: () => void
+}
+
+function FieldToggleButton({
+  icon,
+  label,
+  isOpen,
+  hasData,
+  badgeCount,
+  controlsId,
+  onClick,
+}: FieldToggleButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={isOpen}
+      aria-controls={controlsId}
+      aria-label={label}
+      className={`relative flex h-16 w-16 shrink-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border transition-colors ${
+        isOpen
+          ? 'border-primary bg-primary-light text-primary'
+          : hasData
+            ? 'border-border-subtle bg-slate-100 text-slate-700 hover:bg-slate-200'
+            : 'border-transparent bg-slate-50 text-slate-500 hover:bg-slate-100'
+      }`}
+    >
+      <FieldIcon icon={icon} />
+      <span className="truncate px-1 text-[10px] font-medium leading-none">{label}</span>
+      <span
+        aria-hidden="true"
+        className={`absolute right-1.5 top-1.5 text-[8px] leading-none transition-transform duration-200 ${
+          isOpen ? 'rotate-180' : ''
+        }`}
+      >
+        ▾
+      </span>
+      {typeof badgeCount === 'number' && badgeCount > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-white">
+          {badgeCount}
+        </span>
+      )}
+    </button>
+  )
+}
+
+function CollapsiblePanel({ id, isOpen, children }: { id: string; isOpen: boolean; children: ReactNode }) {
+  return (
+    // height: auto can't be transitioned -- 0fr/1fr on grid-template-rows with an
+    // overflow-hidden child is the standard way to animate a variable-height collapse.
+    <div
+      id={id}
+      className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+        isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}
+    >
+      <div className="overflow-hidden">
+        <div className="pt-3">{children}</div>
+      </div>
+    </div>
+  )
 }
 
 interface CardDetailModalProps {
@@ -73,6 +154,18 @@ export function CardDetailModal({
   const [newLinkName, setNewLinkName] = useState('')
   const [newLinkUrl, setNewLinkUrl] = useState('')
   const [imageThumbnails, setImageThumbnails] = useState<Record<string, string>>({})
+
+  const [openField, setOpenField] = useState<Record<CollapsibleField, boolean>>({
+    inicio: false,
+    fin: false,
+    ubicacion: false,
+    etiquetas: false,
+    checklist: false,
+  })
+
+  function toggleField(field: CollapsibleField) {
+    setOpenField((prev) => ({ ...prev, [field]: !prev[field] }))
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -507,14 +600,14 @@ export function CardDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:p-6"
       onClick={() => onClose(card.id)}
     >
       <div
-        className="mt-10 w-full max-w-lg rounded-2xl bg-surface p-6 shadow-elevated"
+        className="mt-4 flex w-full max-w-lg animate-modal-in flex-col rounded-2xl bg-surface p-4 shadow-elevated sm:mt-10 sm:h-[60vh] sm:w-[60vw] sm:max-w-4xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="mb-4 flex shrink-0 items-start justify-between gap-2">
           <label htmlFor="card-title" className="sr-only">
             Título de la tarjeta
           </label>
@@ -526,35 +619,82 @@ export function CardDetailModal({
             onKeyDown={(e) => {
               if (e.key === 'Enter') e.currentTarget.blur()
             }}
-            className="w-full rounded-lg border border-transparent px-2 py-1 text-lg font-semibold text-slate-900 transition-colors hover:border-border-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-lg border border-transparent px-2 py-2 text-lg font-semibold text-slate-900 transition-colors hover:border-border-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <button
             type="button"
             onClick={() => onClose(card.id)}
-            className="shrink-0 cursor-pointer rounded-lg px-2 py-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
             aria-label="Cerrar"
           >
             ✕
           </button>
         </div>
 
-        {modalError && (
-          <p className="mb-3 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{modalError}</p>
-        )}
+        {/* Scrolls internally so the fixed-height (sm:) panel above doesn't clip content. */}
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div className="mb-3 flex flex-wrap gap-2">
+            <FieldToggleButton
+              icon={startDateIcon}
+              label="Inicio"
+              isOpen={openField.inicio}
+              hasData={!!startDate}
+              controlsId="card-field-panel-inicio"
+              onClick={() => toggleField('inicio')}
+            />
+            <FieldToggleButton
+              icon={endDateIcon}
+              label="Fin"
+              isOpen={openField.fin}
+              hasData={!!endDate}
+              controlsId="card-field-panel-fin"
+              onClick={() => toggleField('fin')}
+            />
+            <FieldToggleButton
+              icon={locationIcon}
+              label="Ubicación"
+              isOpen={openField.ubicacion}
+              hasData={!!locationData}
+              controlsId="card-field-panel-ubicacion"
+              onClick={() => toggleField('ubicacion')}
+            />
+            <FieldToggleButton
+              icon={labelsIcon}
+              label="Etiquetas"
+              isOpen={openField.etiquetas}
+              hasData={assignedLabelIds.length > 0}
+              badgeCount={assignedLabelIds.length}
+              controlsId="card-field-panel-etiquetas"
+              onClick={() => toggleField('etiquetas')}
+            />
+            <FieldToggleButton
+              icon={checklistIcon}
+              label="Lista"
+              isOpen={openField.checklist}
+              hasData={checklists.length > 0}
+              badgeCount={checklists.length}
+              controlsId="card-field-panel-checklist"
+              onClick={() => toggleField('checklist')}
+            />
+          </div>
 
-        <div className="mb-4 flex flex-col gap-2 text-sm">
-          <span className="text-slate-500">
+          {modalError && (
+            <p className="mb-3 rounded-lg bg-danger-light px-3 py-2 text-sm text-danger">{modalError}</p>
+          )}
+
+          <div className="mb-1 text-sm text-slate-500">
             Creada: {new Date(card.created_at).toLocaleString()}
-          </span>
-          <div className="flex flex-wrap items-center gap-4">
-            <label htmlFor="card-start-date" className="flex items-center gap-2 text-slate-700">
+          </div>
+
+          <CollapsiblePanel id="card-field-panel-inicio" isOpen={openField.inicio}>
+            <label htmlFor="card-start-date" className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
               <span className="font-medium">Inicio:</span>
               <input
                 id="card-start-date"
                 type="datetime-local"
                 value={toDatetimeLocalValue(startDate)}
                 onChange={(e) => handleStartDateChange(e.target.value)}
-                className="rounded-lg border border-border-subtle px-2 py-1 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               {startDate && (
                 <button
@@ -566,7 +706,10 @@ export function CardDetailModal({
                 </button>
               )}
             </label>
-            <label htmlFor="card-end-date" className="flex items-center gap-2 text-slate-700">
+          </CollapsiblePanel>
+
+          <CollapsiblePanel id="card-field-panel-fin" isOpen={openField.fin}>
+            <label htmlFor="card-end-date" className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
               <span className="font-medium">Fin:</span>
               <input
                 id="card-end-date"
@@ -574,7 +717,7 @@ export function CardDetailModal({
                 value={toDatetimeLocalValue(endDate)}
                 onChange={(e) => handleEndDateChange(e.target.value)}
                 disabled={!startDate}
-                className="rounded-lg border border-border-subtle px-2 py-1 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-slate-100 disabled:text-slate-400"
+                className="rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:bg-slate-100 disabled:text-slate-400"
               />
               {endDate && (
                 <button
@@ -586,447 +729,448 @@ export function CardDetailModal({
                 </button>
               )}
             </label>
-          </div>
-          {startDate && !endDate && (
-            <span className="text-xs text-slate-400">
-              Sin hora de fin: se trata como una fecha límite de todo el día.
-            </span>
-          )}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-slate-700">Ubicación:</span>
-            {locationData ? (
-              <>
-                <span className="text-slate-600">
-                  {locationData.lat.toFixed(5)}, {locationData.lng.toFixed(5)}
-                </span>
+            {startDate && !endDate && (
+              <span className="mt-1 block text-xs text-slate-400">
+                Sin hora de fin: se trata como una fecha límite de todo el día.
+              </span>
+            )}
+          </CollapsiblePanel>
+
+          <CollapsiblePanel id="card-field-panel-ubicacion" isOpen={openField.ubicacion}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-slate-700">Ubicación:</span>
+              {locationData ? (
+                <>
+                  <span className="text-slate-600">
+                    {locationData.lat.toFixed(5)}, {locationData.lng.toFixed(5)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleLocationChange(null)}
+                    className="cursor-pointer text-xs text-slate-400 transition-colors hover:text-danger"
+                  >
+                    Quitar
+                  </button>
+                </>
+              ) : (
                 <button
                   type="button"
-                  onClick={() => handleLocationChange(null)}
-                  className="cursor-pointer text-xs text-slate-400 transition-colors hover:text-danger"
+                  onClick={handleUseMyLocation}
+                  disabled={locatingMe}
+                  className="cursor-pointer rounded-lg bg-slate-100 px-2.5 py-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Quitar
+                  {locatingMe ? 'Obteniendo ubicación…' : 'Usar mi ubicación actual'}
                 </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={handleUseMyLocation}
-                disabled={locatingMe}
-                className="cursor-pointer rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {locatingMe ? 'Obteniendo ubicación…' : 'Usar mi ubicación actual'}
-              </button>
-            )}
-          </div>
-        </div>
-
-        <label
-          htmlFor="card-description"
-          className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-        >
-          Descripción
-        </label>
-        {editingDescription ? (
-          <textarea
-            id="card-description"
-            autoFocus
-            rows={4}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={commitDescription}
-            placeholder="Agrega una descripción más detallada…"
-            className="mb-4 w-full resize-y rounded-lg border border-primary px-2 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        ) : (
-          <div
-            onClick={() => setEditingDescription(true)}
-            className="mb-4 min-h-[3rem] w-full cursor-text whitespace-pre-wrap rounded-lg border border-transparent px-2 py-2 text-sm transition-colors hover:border-border-subtle hover:bg-slate-50"
-          >
-            {description.trim() ? (
-              <span className="text-slate-800">{linkifyText(description)}</span>
-            ) : (
-              <span className="text-slate-400">Agrega una descripción más detallada…</span>
-            )}
-          </div>
-        )}
-
-        {/* Labels */}
-        <div className="mb-4">
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Etiquetas</h3>
-          {boardLabels.length === 0 ? (
-            <p className="text-sm text-slate-500">Aún no hay etiquetas en este tablero.</p>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {boardLabels.map((label) => {
-                const assigned = assignedLabelIds.includes(label.id)
-                return (
-                  <button
-                    key={label.id}
-                    type="button"
-                    onClick={() => handleLabelToggle(label.id)}
-                    className={`rounded px-2 py-1 text-xs font-medium text-white ${
-                      assigned ? '' : 'opacity-40 hover:opacity-70'
-                    }`}
-                    style={{ backgroundColor: label.color }}
-                    aria-pressed={assigned}
-                  >
-                    {label.name || '(sin nombre)'}
-                  </button>
-                )
-              })}
+              )}
             </div>
-          )}
-        </div>
+          </CollapsiblePanel>
 
-        {/* Checklists */}
-        <div className="mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Listas de verificación</h3>
-          {checklistsLoading ? (
-            <p className="text-sm text-slate-500">Cargando listas de verificación…</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {checklists.map((checklist) => {
-                const total = checklist.items.length
-                const completed = checklist.items.filter((i) => i.is_complete).length
-                const progress = total > 0 ? Math.round((completed / total) * 100) : 0
-                const draft = newItemDrafts[checklist.id] ?? ''
-                return (
-                  <div key={checklist.id} className="rounded-lg border border-border-subtle p-2">
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-slate-800">{checklist.title}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500">
-                          {completed}/{total}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteChecklist(checklist.id)}
-                          className="cursor-pointer rounded-lg px-1.5 py-0.5 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
-                          aria-label={`Eliminar lista de verificación ${checklist.title}`}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                    {total > 0 && (
-                      <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className="h-full rounded-full bg-success"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    )}
-                    <ul className="mb-2 flex flex-col gap-1">
-                      {checklist.items.map((item) => (
-                        <li key={item.id} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={item.is_complete}
-                            onChange={(e) => void handleToggleItem(checklist.id, item.id, e.target.checked)}
-                            aria-label={item.text}
-                          />
-                          <span
-                            className={`flex-1 text-sm ${
-                              item.is_complete ? 'text-slate-400 line-through' : 'text-slate-800'
-                            }`}
-                          >
-                            {item.text}
+          <CollapsiblePanel id="card-field-panel-etiquetas" isOpen={openField.etiquetas}>
+            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Etiquetas</h3>
+            {boardLabels.length === 0 ? (
+              <p className="text-sm text-slate-500">Aún no hay etiquetas en este tablero.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {boardLabels.map((label) => {
+                  const assigned = assignedLabelIds.includes(label.id)
+                  return (
+                    <button
+                      key={label.id}
+                      type="button"
+                      onClick={() => handleLabelToggle(label.id)}
+                      className={`rounded px-2 py-1.5 text-xs font-medium text-white ${
+                        assigned ? '' : 'opacity-40 hover:opacity-70'
+                      }`}
+                      style={{ backgroundColor: label.color }}
+                      aria-pressed={assigned}
+                    >
+                      {label.name || '(sin nombre)'}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </CollapsiblePanel>
+
+          <CollapsiblePanel id="card-field-panel-checklist" isOpen={openField.checklist}>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Listas de verificación</h3>
+            {checklistsLoading ? (
+              <p className="text-sm text-slate-500">Cargando listas de verificación…</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {checklists.map((checklist) => {
+                  const total = checklist.items.length
+                  const completed = checklist.items.filter((i) => i.is_complete).length
+                  const progress = total > 0 ? Math.round((completed / total) * 100) : 0
+                  const draft = newItemDrafts[checklist.id] ?? ''
+                  return (
+                    <div key={checklist.id} className="rounded-lg border border-border-subtle p-2">
+                      <div className="mb-1 flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-slate-800">{checklist.title}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500">
+                            {completed}/{total}
                           </span>
                           <button
                             type="button"
-                            onClick={() => void handleDeleteItem(checklist.id, item.id)}
-                            className="cursor-pointer rounded-lg px-1 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
-                            aria-label={`Eliminar elemento ${item.text}`}
+                            onClick={() => void handleDeleteChecklist(checklist.id)}
+                            className="cursor-pointer rounded-lg px-2 py-1 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
+                            aria-label={`Eliminar lista de verificación ${checklist.title}`}
                           >
                             ✕
                           </button>
-                        </li>
-                      ))}
-                    </ul>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        void handleAddItem(checklist.id)
-                      }}
-                      className="flex gap-2"
-                    >
-                      <label htmlFor={`item-${checklist.id}`} className="sr-only">
-                        Nuevo elemento de la lista
-                      </label>
-                      <input
-                        id={`item-${checklist.id}`}
-                        type="text"
-                        value={draft}
-                        onChange={(e) =>
-                          setNewItemDrafts((prev) => ({ ...prev, [checklist.id]: e.target.value }))
-                        }
-                        placeholder="Agregar un elemento"
-                        className="flex-1 rounded-lg border border-border-subtle px-2 py-1 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!draft.trim()}
-                        className="cursor-pointer rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        </div>
+                      </div>
+                      {total > 0 && (
+                        <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-full rounded-full bg-success"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      )}
+                      <ul className="mb-2 flex flex-col gap-1">
+                        {checklist.items.map((item) => (
+                          <li key={item.id} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={item.is_complete}
+                              onChange={(e) => void handleToggleItem(checklist.id, item.id, e.target.checked)}
+                              aria-label={item.text}
+                            />
+                            <span
+                              className={`flex-1 text-sm ${
+                                item.is_complete ? 'text-slate-400 line-through' : 'text-slate-800'
+                              }`}
+                            >
+                              {item.text}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteItem(checklist.id, item.id)}
+                              className="cursor-pointer rounded-lg px-1.5 py-1 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
+                              aria-label={`Eliminar elemento ${item.text}`}
+                            >
+                              ✕
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          void handleAddItem(checklist.id)
+                        }}
+                        className="flex gap-2"
                       >
-                        Agregar
-                      </button>
-                    </form>
-                  </div>
-                )
-              })}
+                        <label htmlFor={`item-${checklist.id}`} className="sr-only">
+                          Nuevo elemento de la lista
+                        </label>
+                        <input
+                          id={`item-${checklist.id}`}
+                          type="text"
+                          value={draft}
+                          onChange={(e) =>
+                            setNewItemDrafts((prev) => ({ ...prev, [checklist.id]: e.target.value }))
+                          }
+                          placeholder="Agregar un elemento"
+                          className="min-w-0 flex-1 rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!draft.trim()}
+                          className="cursor-pointer rounded-lg bg-slate-100 px-2 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Agregar
+                        </button>
+                      </form>
+                    </div>
+                  )
+                })}
 
-              <form onSubmit={handleAddChecklist} className="flex gap-2">
-                <label htmlFor="new-checklist-title" className="sr-only">
-                  Título de la nueva lista de verificación
+                <form onSubmit={handleAddChecklist} className="flex flex-col gap-2 sm:flex-row">
+                  <label htmlFor="new-checklist-title" className="sr-only">
+                    Título de la nueva lista de verificación
+                  </label>
+                  <input
+                    id="new-checklist-title"
+                    type="text"
+                    value={newChecklistTitle}
+                    onChange={(e) => setNewChecklistTitle(e.target.value)}
+                    placeholder="Lista de verificación"
+                    className="min-w-0 rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:flex-1"
+                  />
+                  <button
+                    type="submit"
+                    className="cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+                  >
+                    Agregar lista de verificación
+                  </button>
+                </form>
+              </div>
+            )}
+          </CollapsiblePanel>
+
+          <label
+            htmlFor="card-description"
+            className="mb-1 mt-4 block text-xs font-semibold uppercase tracking-wide text-slate-500"
+          >
+            Descripción
+          </label>
+          {editingDescription ? (
+            <textarea
+              id="card-description"
+              autoFocus
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onBlur={commitDescription}
+              placeholder="Agrega una descripción más detallada…"
+              className="mb-4 w-full resize-y rounded-lg border border-primary px-2 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          ) : (
+            <div
+              onClick={() => setEditingDescription(true)}
+              className="mb-4 min-h-[3rem] w-full cursor-text whitespace-pre-wrap rounded-lg border border-transparent px-2 py-2 text-sm transition-colors hover:border-border-subtle hover:bg-slate-50"
+            >
+              {description.trim() ? (
+                <span className="text-slate-800">{linkifyText(description)}</span>
+              ) : (
+                <span className="text-slate-400">Agrega una descripción más detallada…</span>
+              )}
+            </div>
+          )}
+
+          {/* Attachments */}
+          <div className="mb-4">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Archivos adjuntos</h3>
+            {attachmentsLoading ? (
+              <p className="text-sm text-slate-500">Cargando archivos adjuntos…</p>
+            ) : (
+              <div className="mb-2 flex flex-col gap-2">
+                {attachments.length === 0 && (
+                  <p className="text-sm text-slate-500">Aún no hay archivos adjuntos.</p>
+                )}
+                {attachments.map((attachment) => {
+                  const showImage = isImageAttachment(attachment) && imageThumbnails[attachment.id]
+                  const nameAndMeta = (
+                    <div className="min-w-0 flex-1">
+                      {attachment.url ? (
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block truncate text-sm font-medium text-primary hover:underline"
+                        >
+                          {attachment.file_name}
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            attachment.storage_path && void handleOpenFileAttachment(attachment.storage_path)
+                          }
+                          className="block truncate text-left text-sm font-medium text-primary hover:underline"
+                        >
+                          {attachment.file_name}
+                        </button>
+                      )}
+                      {!attachment.url && (
+                        <span className="text-xs text-slate-500">
+                          {attachment.file_type ?? 'archivo'}
+                          {attachment.size !== null ? ` · ${formatFileSize(attachment.size)}` : ''}
+                        </span>
+                      )}
+                    </div>
+                  )
+                  const deleteButton = canDeleteAttachment(attachment) && (
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteAttachment(attachment)}
+                      className="shrink-0 cursor-pointer rounded-lg px-1.5 py-1 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
+                      aria-label={`Eliminar archivo adjunto ${attachment.file_name}`}
+                    >
+                      ✕
+                    </button>
+                  )
+
+                  if (showImage) {
+                    return (
+                      <div key={attachment.id} className="flex flex-col gap-2 rounded-lg bg-slate-50 p-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            attachment.storage_path && void handleOpenFileAttachment(attachment.storage_path)
+                          }
+                        >
+                          <img
+                            src={imageThumbnails[attachment.id]}
+                            alt={attachment.file_name}
+                            className="max-h-96 w-full rounded-lg border border-border-subtle object-contain"
+                          />
+                        </button>
+                        <div className="flex items-center justify-between gap-2">
+                          {nameAndMeta}
+                          <div className="flex shrink-0 items-center gap-2">
+                            {coverAttachmentId === attachment.id ? (
+                              <span className="flex items-center gap-1 rounded-lg bg-primary-light px-1.5 py-0.5 text-xs font-medium text-primary">
+                                Portada actual
+                                <button
+                                  type="button"
+                                  onClick={() => void handleSetCover(null)}
+                                  className="px-1 text-primary hover:text-primary"
+                                  aria-label="Quitar portada"
+                                >
+                                  ✕
+                                </button>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => void handleSetCover(attachment.id)}
+                                className="cursor-pointer rounded-lg px-2 py-1 text-xs text-slate-500 transition-colors hover:bg-slate-200"
+                              >
+                                Usar como portada
+                              </button>
+                            )}
+                            {deleteButton}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div
+                      key={attachment.id}
+                      className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2"
+                    >
+                      {nameAndMeta}
+                      {deleteButton}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="new-attachment-file"
+                  className="flex min-h-11 cursor-pointer items-center rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200"
+                >
+                  Subir archivo
                 </label>
                 <input
-                  id="new-checklist-title"
+                  id="new-attachment-file"
+                  type="file"
+                  onChange={(e) => void handleFileSelected(e)}
+                  disabled={uploadingFile}
+                  className="sr-only"
+                />
+                {uploadingFile && <span className="text-xs text-slate-500">Subiendo…</span>}
+              </div>
+
+              <form onSubmit={handleAddLink} className="flex flex-col gap-2 sm:flex-row">
+                <label htmlFor="new-attachment-name" className="sr-only">
+                  Nombre del enlace (opcional)
+                </label>
+                <input
+                  id="new-attachment-name"
                   type="text"
-                  value={newChecklistTitle}
-                  onChange={(e) => setNewChecklistTitle(e.target.value)}
-                  placeholder="Lista de verificación"
-                  className="flex-1 rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  value={newLinkName}
+                  onChange={(e) => setNewLinkName(e.target.value)}
+                  placeholder="Nombre (opcional)"
+                  className="w-full rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-32"
+                />
+                <label htmlFor="new-attachment-url" className="sr-only">
+                  URL del enlace
+                </label>
+                <input
+                  id="new-attachment-url"
+                  type="text"
+                  value={newLinkUrl}
+                  onChange={(e) => setNewLinkUrl(e.target.value)}
+                  placeholder="Pega un enlace…"
+                  className="min-w-0 flex-1 rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
                 <button
                   type="submit"
-                  className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+                  disabled={!newLinkUrl.trim()}
+                  className="cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Agregar lista de verificación
+                  Agregar enlace
                 </button>
               </form>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Attachments */}
-        <div className="mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Archivos adjuntos</h3>
-          {attachmentsLoading ? (
-            <p className="text-sm text-slate-500">Cargando archivos adjuntos…</p>
-          ) : (
-            <div className="mb-2 flex flex-col gap-2">
-              {attachments.length === 0 && (
-                <p className="text-sm text-slate-500">Aún no hay archivos adjuntos.</p>
-              )}
-              {attachments.map((attachment) => {
-                const showImage = isImageAttachment(attachment) && imageThumbnails[attachment.id]
-                const nameAndMeta = (
-                  <div className="min-w-0 flex-1">
-                    {attachment.url ? (
-                      <a
-                        href={attachment.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block truncate text-sm font-medium text-primary hover:underline"
-                      >
-                        {attachment.file_name}
-                      </a>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          attachment.storage_path && void handleOpenFileAttachment(attachment.storage_path)
-                        }
-                        className="block truncate text-left text-sm font-medium text-primary hover:underline"
-                      >
-                        {attachment.file_name}
-                      </button>
-                    )}
-                    {!attachment.url && (
-                      <span className="text-xs text-slate-500">
-                        {attachment.file_type ?? 'archivo'}
-                        {attachment.size !== null ? ` · ${formatFileSize(attachment.size)}` : ''}
+          {/* Comments */}
+          <div className="mb-4">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Comentarios</h3>
+            {commentsLoading ? (
+              <p className="text-sm text-slate-500">Cargando comentarios…</p>
+            ) : (
+              <div className="mb-2 flex flex-col gap-2">
+                {comments.length === 0 && <p className="text-sm text-slate-500">Aún no hay comentarios.</p>}
+                {comments.map((comment) => (
+                  <div key={comment.id} className="rounded-lg bg-slate-50 p-2">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-slate-700">
+                        {comment.profiles?.username ?? '(usuario desconocido)'}
                       </span>
-                    )}
-                  </div>
-                )
-                const deleteButton = canDeleteAttachment(attachment) && (
-                  <button
-                    type="button"
-                    onClick={() => void handleDeleteAttachment(attachment)}
-                    className="shrink-0 cursor-pointer rounded-lg px-1 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
-                    aria-label={`Eliminar archivo adjunto ${attachment.file_name}`}
-                  >
-                    ✕
-                  </button>
-                )
-
-                if (showImage) {
-                  return (
-                    <div key={attachment.id} className="flex flex-col gap-2 rounded-lg bg-slate-50 p-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          attachment.storage_path && void handleOpenFileAttachment(attachment.storage_path)
-                        }
-                      >
-                        <img
-                          src={imageThumbnails[attachment.id]}
-                          alt={attachment.file_name}
-                          className="max-h-96 w-full rounded-lg border border-border-subtle object-contain"
-                        />
-                      </button>
-                      <div className="flex items-center justify-between gap-2">
-                        {nameAndMeta}
-                        <div className="flex shrink-0 items-center gap-2">
-                          {coverAttachmentId === attachment.id ? (
-                            <span className="flex items-center gap-1 rounded-lg bg-primary-light px-1.5 py-0.5 text-xs font-medium text-primary">
-                              Portada actual
-                              <button
-                                type="button"
-                                onClick={() => void handleSetCover(null)}
-                                className="text-primary hover:text-primary"
-                                aria-label="Quitar portada"
-                              >
-                                ✕
-                              </button>
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => void handleSetCover(attachment.id)}
-                              className="cursor-pointer rounded-lg px-1.5 py-0.5 text-xs text-slate-500 transition-colors hover:bg-slate-200"
-                            >
-                              Usar como portada
-                            </button>
-                          )}
-                          {deleteButton}
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">
+                          {new Date(comment.created_at).toLocaleString()}
+                        </span>
+                        {canDeleteComment(comment) && (
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteComment(comment.id)}
+                            className="cursor-pointer rounded-lg px-1.5 py-1 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
+                            aria-label="Eliminar comentario"
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
                     </div>
-                  )
-                }
-
-                return (
-                  <div
-                    key={attachment.id}
-                    className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2"
-                  >
-                    {nameAndMeta}
-                    {deleteButton}
+                    <p className="whitespace-pre-wrap text-sm text-slate-800">{linkifyText(comment.body)}</p>
                   </div>
-                )
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <label
-                htmlFor="new-attachment-file"
-                className="cursor-pointer rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200"
-              >
-                Subir archivo
+            <form onSubmit={handleAddComment} className="flex flex-col gap-2">
+              <label htmlFor="new-comment" className="sr-only">
+                Agregar un comentario
               </label>
-              <input
-                id="new-attachment-file"
-                type="file"
-                onChange={(e) => void handleFileSelected(e)}
-                disabled={uploadingFile}
-                className="sr-only"
-              />
-              {uploadingFile && <span className="text-xs text-slate-500">Subiendo…</span>}
-            </div>
-
-            <form onSubmit={handleAddLink} className="flex gap-2">
-              <label htmlFor="new-attachment-name" className="sr-only">
-                Nombre del enlace (opcional)
-              </label>
-              <input
-                id="new-attachment-name"
-                type="text"
-                value={newLinkName}
-                onChange={(e) => setNewLinkName(e.target.value)}
-                placeholder="Nombre (opcional)"
-                className="w-32 rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              <label htmlFor="new-attachment-url" className="sr-only">
-                URL del enlace
-              </label>
-              <input
-                id="new-attachment-url"
-                type="text"
-                value={newLinkUrl}
-                onChange={(e) => setNewLinkUrl(e.target.value)}
-                placeholder="Pega un enlace…"
-                className="flex-1 rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              <textarea
+                id="new-comment"
+                rows={2}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Escribe un comentario…"
+                className="w-full resize-y rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-800 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <button
                 type="submit"
-                disabled={!newLinkUrl.trim()}
-                className="cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!newComment.trim()}
+                className="self-start cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Agregar enlace
+                Comentar
               </button>
             </form>
           </div>
+
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="cursor-pointer rounded-lg bg-danger-light px-3 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger hover:text-white"
+          >
+            Eliminar tarjeta
+          </button>
         </div>
-
-        {/* Comments */}
-        <div className="mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Comentarios</h3>
-          {commentsLoading ? (
-            <p className="text-sm text-slate-500">Cargando comentarios…</p>
-          ) : (
-            <div className="mb-2 flex flex-col gap-2">
-              {comments.length === 0 && <p className="text-sm text-slate-500">Aún no hay comentarios.</p>}
-              {comments.map((comment) => (
-                <div key={comment.id} className="rounded-lg bg-slate-50 p-2">
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-slate-700">
-                      {comment.profiles?.username ?? '(usuario desconocido)'}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400">
-                        {new Date(comment.created_at).toLocaleString()}
-                      </span>
-                      {canDeleteComment(comment) && (
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteComment(comment.id)}
-                          className="cursor-pointer rounded-lg px-1 text-xs text-slate-400 transition-colors hover:bg-danger-light hover:text-danger"
-                          aria-label="Eliminar comentario"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="whitespace-pre-wrap text-sm text-slate-800">{linkifyText(comment.body)}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <form onSubmit={handleAddComment} className="flex flex-col gap-2">
-            <label htmlFor="new-comment" className="sr-only">
-              Agregar un comentario
-            </label>
-            <textarea
-              id="new-comment"
-              rows={2}
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Escribe un comentario…"
-              className="w-full resize-y rounded-lg border border-border-subtle px-2 py-1.5 text-sm text-slate-800 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <button
-              type="submit"
-              disabled={!newComment.trim()}
-              className="self-start cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Comentar
-            </button>
-          </form>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleDelete}
-          className="cursor-pointer rounded-lg bg-danger-light px-3 py-1.5 text-sm font-semibold text-danger transition-colors hover:bg-danger hover:text-white"
-        >
-          Eliminar tarjeta
-        </button>
       </div>
     </div>
   )

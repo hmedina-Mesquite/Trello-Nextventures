@@ -15,7 +15,7 @@ export function ListOverlayPreview({
   cardCoverUrlByCardId: Record<string, string>
 }) {
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col gap-2 rounded-xl bg-slate-50 p-3 shadow-elevated">
+    <div className="flex w-[85vw] max-w-xs flex-shrink-0 flex-col gap-2 rounded-xl bg-slate-50 p-3 shadow-elevated sm:w-72">
       <div className="flex items-center justify-between gap-2">
         <h2 className="w-full rounded-lg px-2 py-1 text-sm font-semibold text-slate-800">{list.name}</h2>
       </div>
@@ -104,7 +104,7 @@ export function ListColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex w-72 flex-shrink-0 flex-col gap-2 rounded-xl bg-slate-50 p-3 shadow-card ${
+      className={`flex h-full w-[85vw] max-w-xs flex-shrink-0 flex-col gap-2 rounded-xl bg-slate-50 p-3 shadow-card sm:w-72 ${
         isDragging ? 'opacity-0' : ''
       }`}
     >
@@ -155,7 +155,10 @@ export function ListColumn({
       </div>
 
       <SortableContext items={list.cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-        <div className="flex flex-col gap-2">
+        {/* min-h-0: same flex-1-in-a-flex-column gotcha as BoardPage's row --
+            without it this scrolls the whole column (or page) instead of
+            just the card list. */}
+        <div className="flex flex-1 min-h-0 flex-col gap-2 overflow-y-auto">
           {list.cards.map((card) => (
             <CardItem
               key={card.id}

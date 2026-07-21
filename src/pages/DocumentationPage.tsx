@@ -23,7 +23,7 @@ function CodeBlock({ code }: CodeBlockProps) {
         <button
           type="button"
           onClick={() => void handleCopy()}
-          className="cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-slate-200 transition-colors hover:bg-white/10"
+          className="cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-white/10"
         >
           {copied ? 'Copiado ✓' : 'Copiar'}
         </button>
@@ -59,12 +59,12 @@ function BaseUrlBanner() {
           readOnly
           value={baseUrl}
           onFocus={(e) => e.currentTarget.select()}
-          className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-white px-3 py-1.5 font-mono text-sm text-slate-800"
+          className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-white px-3 py-2 font-mono text-sm text-slate-800"
         />
         <button
           type="button"
           onClick={() => void handleCopy()}
-          className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+          className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
         >
           {copied ? 'Copiado ✓' : 'Copiar'}
         </button>
@@ -94,7 +94,7 @@ const TOC = [
 export default function DocumentationPage() {
   return (
     <div className="min-h-screen bg-app-bg">
-      <header className="flex items-center justify-between border-b border-border-subtle bg-surface px-6 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-y-2 border-b border-border-subtle bg-surface px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-800">
             ← Tableros
@@ -103,7 +103,7 @@ export default function DocumentationPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-3xl flex-col gap-5 px-6 py-8">
+      <main className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6 sm:py-8">
         <BaseUrlBanner />
 
         <div className="rounded-xl border border-border-subtle bg-surface p-5 shadow-card">
