@@ -25,6 +25,11 @@ interface WebhookTestResult {
   retried: number
 }
 
+// The API lives here, at the Supabase project's own URL -- NOT at this
+// webapp's own URL (the one in the browser's address bar). Shown explicitly
+// in the panel since that distinction has been a real source of confusion.
+const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL as string}/functions/v1`
+
 function apiKeyStatus(key: ApiKey): 'Activa' | 'Revocada' | 'Expirada' {
   if (key.revoked_at) return 'Revocada'
   if (key.expires_at && new Date(key.expires_at).getTime() <= Date.now()) return 'Expirada'
@@ -32,6 +37,8 @@ function apiKeyStatus(key: ApiKey): 'Activa' | 'Revocada' | 'Expirada' {
 }
 
 export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanelProps) {
+  const [baseUrlCopied, setBaseUrlCopied] = useState(false)
+
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [loadingKeys, setLoadingKeys] = useState(true)
   const [keysError, setKeysError] = useState<string | null>(null)
@@ -130,6 +137,12 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
     setNewKeyLabel('')
   }
 
+  async function handleCopyBaseUrl() {
+    await navigator.clipboard.writeText(API_BASE_URL)
+    setBaseUrlCopied(true)
+    setTimeout(() => setBaseUrlCopied(false), 2000)
+  }
+
   async function handleCopyKey() {
     if (!generatedKey) return
     await navigator.clipboard.writeText(generatedKey.api_key)
@@ -222,9 +235,31 @@ export function IntegrationsPanel({ board, isOwner, onClose }: IntegrationsPanel
           </button>
         </div>
 
-        <Link to="/documentation" className="mb-4 inline-block text-xs text-primary hover:text-primary-hover">
+        <Link to="/documentation" className="mb-3 inline-block text-xs text-primary hover:text-primary-hover">
           Ver documentación completa de la API →
         </Link>
+
+        <div className="mb-4 rounded-lg border border-primary/30 bg-primary-light px-3 py-2">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
+            URL base de la API (no es la URL de esta app)
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              readOnly
+              value={API_BASE_URL}
+              onFocus={(e) => e.currentTarget.select()}
+              className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-white px-2 py-1 font-mono text-xs text-slate-800"
+            />
+            <button
+              type="button"
+              onClick={() => void handleCopyBaseUrl()}
+              className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-2 py-1 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+            >
+              {baseUrlCopied ? 'Copiado ✓' : 'Copiar'}
+            </button>
+          </div>
+        </div>
 
         {!isOwner && (
           <p className="mb-4 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">

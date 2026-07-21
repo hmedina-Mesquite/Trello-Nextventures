@@ -35,6 +35,44 @@ function CodeBlock({ code }: CodeBlockProps) {
   )
 }
 
+function BaseUrlBanner() {
+  const [copied, setCopied] = useState(false)
+  const baseUrl = `${SUPABASE_URL}/functions/v1`
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(baseUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary-light p-5 shadow-card">
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">URL base de la API</h2>
+      <p className="mb-3 text-xs text-slate-600">
+        Esta es la URL para conectar sistemas externos — <strong>no</strong> es la URL de esta
+        aplicación web (esa es donde tú abres tableros en el navegador; la API vive en otro lugar,
+        aquí abajo).
+      </p>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          readOnly
+          value={baseUrl}
+          onFocus={(e) => e.currentTarget.select()}
+          className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-white px-3 py-1.5 font-mono text-sm text-slate-800"
+        />
+        <button
+          type="button"
+          onClick={() => void handleCopy()}
+          className="cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+        >
+          {copied ? 'Copiado ✓' : 'Copiar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section id={id} className="rounded-xl border border-border-subtle bg-surface p-5 shadow-card">
@@ -66,6 +104,8 @@ export default function DocumentationPage() {
       </header>
 
       <main className="mx-auto flex max-w-3xl flex-col gap-5 px-6 py-8">
+        <BaseUrlBanner />
+
         <div className="rounded-xl border border-border-subtle bg-surface p-5 shadow-card">
           <p className="text-sm leading-relaxed text-slate-600">
             Cada tablero puede generar una o más claves API para que un sistema externo lea sus
