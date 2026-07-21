@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage'
 import BoardPage from './pages/BoardPage'
 import CalendarPage from './pages/CalendarPage'
 import GoogleCallbackPage from './pages/GoogleCallbackPage'
+import DocumentationPage from './pages/DocumentationPage'
 
 function App() {
   return (
@@ -36,6 +37,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/documentation"
+            element={
+              <ProtectedRoute>
+                <DocumentationPage />
               </ProtectedRoute>
             }
           />

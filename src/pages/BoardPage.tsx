@@ -20,6 +20,7 @@ import { CardOverlayPreview } from '../components/CardItem'
 import { LabelsPanel } from '../components/LabelsPanel'
 import { MembersPanel } from '../components/MembersPanel'
 import { BackgroundPanel } from '../components/BackgroundPanel'
+import { IntegrationsPanel } from '../components/IntegrationsPanel'
 import { NotificationsBell } from '../components/NotificationsBell'
 import { CardDetailModal } from '../components/CardDetailModal'
 import { TableView } from '../components/TableView'
@@ -130,6 +131,7 @@ export default function BoardPage() {
   const [showLabelsPanel, setShowLabelsPanel] = useState(false)
   const [showMembersPanel, setShowMembersPanel] = useState(false)
   const [showBackgroundPanel, setShowBackgroundPanel] = useState(false)
+  const [showIntegrationsPanel, setShowIntegrationsPanel] = useState(false)
   const [backgroundImageUrl, setBackgroundImageUrl] = useState<string | null>(null)
   const [activeCard, setActiveCard] = useState<Card | null>(null)
   const [activeList, setActiveList] = useState<ListWithCards | null>(null)
@@ -849,6 +851,13 @@ export default function BoardPage() {
           >
             Fondo
           </button>
+          <button
+            type="button"
+            onClick={() => setShowIntegrationsPanel(true)}
+            className="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+          >
+            Integraciones
+          </button>
           <NotificationsBell buttonClassName="relative cursor-pointer rounded-lg bg-white/10 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20" />
         </div>
       </header>
@@ -1028,6 +1037,14 @@ export default function BoardPage() {
           onClose={() => setShowBackgroundPanel(false)}
           onBackgroundChange={handleBackgroundChange}
           onUserBackgroundChange={handleUserBackgroundChange}
+        />
+      )}
+
+      {showIntegrationsPanel && (
+        <IntegrationsPanel
+          board={board}
+          isOwner={isOwner}
+          onClose={() => setShowIntegrationsPanel(false)}
         />
       )}
     </div>

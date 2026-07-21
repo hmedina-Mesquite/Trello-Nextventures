@@ -391,6 +391,23 @@ deno_version = 2
 [functions.calendar-feed]
 verify_jwt = false
 
+# api-board-data (T108) and api-board-mutation (T109) are the external REST
+# pull/push API: callers authenticate with a board-scoped API key
+# (Authorization: Bearer <key>, see _shared/apiKeyAuth.ts / T104) instead of
+# a Supabase JWT, so the platform gateway's default JWT check must be off
+# here too, same reasoning as calendar-feed above.
+[functions.api-board-data]
+verify_jwt = false
+
+[functions.api-board-mutation]
+verify_jwt = false
+
+# webhook-delivery (T107) is triggered manually from the UI (board owner's
+# "test webhook delivery" button, T110) or by an external scheduler hitting
+# it directly -- neither carries a Supabase JWT either.
+[functions.webhook-delivery]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

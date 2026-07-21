@@ -127,6 +127,27 @@ export interface BoardMemberWithProfile extends BoardMember {
   profiles: { username: string | null } | null
 }
 
+// T103/T105: external API integration -- key_hash is never selected (column
+// privilege revoked, see 20260721090001_api_keys.sql), so this only mirrors
+// the columns actually readable from the client.
+export interface ApiKey {
+  id: string
+  board_id: string
+  key_prefix: string
+  label: string
+  created_at: string
+  expires_at: string | null
+  revoked_at: string | null
+}
+
+export interface WebhookEndpoint {
+  id: string
+  board_id: string
+  target_url: string
+  active: boolean
+  created_at: string
+}
+
 export type NotificationEventType = 'board_invite' | 'member_removed' | 'task_completed'
 
 export interface Notification {

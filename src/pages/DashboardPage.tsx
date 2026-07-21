@@ -107,6 +107,12 @@ export default function DashboardPage() {
           >
             Calendario
           </Link>
+          <Link
+            to="/documentation"
+            className="text-sm font-medium text-slate-600 transition-colors hover:text-primary"
+          >
+            Documentación
+          </Link>
           {user && <span className="text-sm text-slate-400">{user.email}</span>}
           <NotificationsBell />
           <button
