@@ -604,7 +604,7 @@ export function CardDetailModal({
       onClick={() => onClose(card.id)}
     >
       <div
-        className="mt-4 flex w-full max-w-lg animate-modal-in flex-col rounded-2xl bg-surface p-4 shadow-elevated sm:mt-4 sm:aspect-[3/4] sm:max-h-[92vh] sm:w-[60vw] sm:max-w-4xl sm:p-6"
+        className="mt-4 flex w-full max-w-lg animate-modal-in flex-col rounded-2xl bg-surface p-4 shadow-elevated sm:mt-4 sm:h-[calc(100vh-3.75rem)] sm:w-[60vw] sm:max-w-4xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex shrink-0 items-start justify-between gap-2">
