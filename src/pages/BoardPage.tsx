@@ -17,7 +17,6 @@ import { useAuth } from '../contexts/AuthContext'
 import type { Board, BoardRole, Card, Label, List, ListWithCards } from '../types'
 import { ListColumn, ListOverlayPreview } from '../components/ListColumn'
 import { CardOverlayPreview } from '../components/CardItem'
-import { LabelsPanel } from '../components/LabelsPanel'
 import { MembersPanel } from '../components/MembersPanel'
 import { BackgroundPanel } from '../components/BackgroundPanel'
 import { IntegrationsPanel } from '../components/IntegrationsPanel'
@@ -128,7 +127,6 @@ export default function BoardPage() {
   const [nameDraft, setNameDraft] = useState('')
   const [newListName, setNewListName] = useState('')
   const [creatingList, setCreatingList] = useState(false)
-  const [showLabelsPanel, setShowLabelsPanel] = useState(false)
   const [showMembersPanel, setShowMembersPanel] = useState(false)
   const [showBackgroundPanel, setShowBackgroundPanel] = useState(false)
   const [showIntegrationsPanel, setShowIntegrationsPanel] = useState(false)
@@ -553,8 +551,8 @@ export default function BoardPage() {
     })
   }
 
-  async function handleCreateLabel(name: string, color: string) {
-    if (!boardId) return
+  async function handleCreateLabel(name: string, color: string): Promise<Label | null> {
+    if (!boardId) return null
     const { data, error: insertError } = await supabase
       .from('labels')
       .insert({ board_id: boardId, name, color })
@@ -562,9 +560,11 @@ export default function BoardPage() {
       .single()
     if (insertError) {
       setError(insertError.message)
-      return
+      return null
     }
-    setBoardLabels((prev) => [...prev, data as Label])
+    const newLabel = data as Label
+    setBoardLabels((prev) => [...prev, newLabel])
+    return newLabel
   }
 
   async function handleDeleteLabel(labelId: string) {
@@ -835,13 +835,6 @@ export default function BoardPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowLabelsPanel(true)}
-            className="min-h-10 cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
-          >
-            Etiquetas
-          </button>
-          <button
-            type="button"
             onClick={() => setShowMembersPanel(true)}
             className="min-h-10 cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
           >
@@ -947,6 +940,8 @@ export default function BoardPage() {
                 onToggleLabel={(cardId, labelId, assign) =>
                   void handleToggleCardLabel(cardId, labelId, assign)
                 }
+                onCreateLabel={handleCreateLabel}
+                onDeleteLabel={(labelId) => void handleDeleteLabel(labelId)}
                 onCardModalClose={(cardId) => void refreshCardCover(cardId)}
               />
             ))}
@@ -1015,15 +1010,8 @@ export default function BoardPage() {
           onUpdate={(cardId, updates) => void handleUpdateCard(cardId, updates)}
           onDelete={(cardId) => void handleDeleteCard(cardId)}
           onToggleLabel={(cardId, labelId, assign) => void handleToggleCardLabel(cardId, labelId, assign)}
-        />
-      )}
-
-      {showLabelsPanel && (
-        <LabelsPanel
-          labels={boardLabels}
-          onClose={() => setShowLabelsPanel(false)}
-          onCreate={(name, color) => void handleCreateLabel(name, color)}
-          onDelete={(labelId) => void handleDeleteLabel(labelId)}
+          onCreateLabel={handleCreateLabel}
+          onDeleteLabel={(labelId) => void handleDeleteLabel(labelId)}
         />
       )}
 

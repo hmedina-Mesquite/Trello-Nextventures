@@ -33,6 +33,25 @@ function formatFileSize(bytes: number | null): string {
 
 type CollapsibleField = 'inicio' | 'fin' | 'ubicacion' | 'etiquetas' | 'checklist'
 
+// Label creation now lives here (inside the card) instead of a board-level
+// panel -- this preset list plus the native color <input> below (a real
+// color wheel on most OSes) covers "more color options" without a custom
+// picker component.
+const LABEL_COLORS = [
+  { name: 'verde', hex: '#61bd4f' },
+  { name: 'amarillo', hex: '#f2d600' },
+  { name: 'naranja', hex: '#ff9f1a' },
+  { name: 'rojo', hex: '#eb5a46' },
+  { name: 'morado', hex: '#c377e0' },
+  { name: 'azul', hex: '#0079bf' },
+  { name: 'celeste', hex: '#00c2e0' },
+  { name: 'verde lima', hex: '#51e898' },
+  { name: 'rosa', hex: '#ff78cb' },
+  { name: 'magenta', hex: '#eb44a8' },
+  { name: 'gris', hex: '#6b7280' },
+  { name: 'negro', hex: '#253858' },
+]
+
 function FieldIcon({ icon }: { icon: string }) {
   return <img src={icon} alt="" aria-hidden="true" className="h-7 w-7" />
 }
@@ -116,6 +135,8 @@ interface CardDetailModalProps {
   onUpdate: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete' | 'location_data'>>) => void
   onDelete: (cardId: string) => void
   onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
+  onCreateLabel: (name: string, color: string) => Promise<Label | null>
+  onDeleteLabel: (labelId: string) => void
 }
 
 export function CardDetailModal({
@@ -127,6 +148,8 @@ export function CardDetailModal({
   onUpdate,
   onDelete,
   onToggleLabel,
+  onCreateLabel,
+  onDeleteLabel,
 }: CardDetailModalProps) {
   const { user } = useAuth()
   const [title, setTitle] = useState(card.title)
@@ -136,6 +159,8 @@ export function CardDetailModal({
   const [locationData, setLocationData] = useState(card.location_data)
   const [locatingMe, setLocatingMe] = useState(false)
   const [editingDescription, setEditingDescription] = useState(false)
+  const [newLabelName, setNewLabelName] = useState('')
+  const [newLabelColor, setNewLabelColor] = useState(LABEL_COLORS[0].hex)
   const [modalError, setModalError] = useState<string | null>(null)
 
   const [checklists, setChecklists] = useState<ChecklistWithItems[]>([])
@@ -369,6 +394,18 @@ export function CardDetailModal({
   function handleLabelToggle(labelId: string) {
     const assigned = assignedLabelIds.includes(labelId)
     onToggleLabel(card.id, labelId, !assigned)
+  }
+
+  async function handleCreateLabelSubmit(e: FormEvent) {
+    e.preventDefault()
+    const trimmed = newLabelName.trim()
+    if (!trimmed) return
+    const created = await onCreateLabel(trimmed, newLabelColor)
+    // A label made from inside a card is made *for* that card -- assign it
+    // immediately instead of leaving a second "now go click it" step.
+    if (created) onToggleLabel(card.id, created.id, true)
+    setNewLabelName('')
+    setNewLabelColor(LABEL_COLORS[0].hex)
   }
 
   async function handleAddChecklist(e: FormEvent) {
@@ -768,28 +805,89 @@ export function CardDetailModal({
           <CollapsiblePanel id="card-field-panel-etiquetas" isOpen={openField.etiquetas}>
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Etiquetas</h3>
             {boardLabels.length === 0 ? (
-              <p className="text-sm text-slate-500">Aún no hay etiquetas en este tablero.</p>
+              <p className="mb-2 text-sm text-slate-500">Aún no hay etiquetas en este tablero.</p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="mb-3 flex flex-wrap gap-1.5">
                 {boardLabels.map((label) => {
                   const assigned = assignedLabelIds.includes(label.id)
                   return (
-                    <button
-                      key={label.id}
-                      type="button"
-                      onClick={() => handleLabelToggle(label.id)}
-                      className={`rounded px-2 py-1.5 text-xs font-medium text-white ${
-                        assigned ? '' : 'opacity-40 hover:opacity-70'
-                      }`}
-                      style={{ backgroundColor: label.color }}
-                      aria-pressed={assigned}
-                    >
-                      {label.name || '(sin nombre)'}
-                    </button>
+                    <span key={label.id} className="relative inline-flex">
+                      <button
+                        type="button"
+                        onClick={() => handleLabelToggle(label.id)}
+                        className={`rounded py-1.5 pl-2 pr-5 text-xs font-medium text-white ${
+                          assigned ? '' : 'opacity-40 hover:opacity-70'
+                        }`}
+                        style={{ backgroundColor: label.color }}
+                        aria-pressed={assigned}
+                      >
+                        {label.name || '(sin nombre)'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteLabel(label.id)}
+                        className="absolute right-0.5 top-1/2 flex h-3.5 w-3.5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-white/80 transition-colors hover:bg-black/20 hover:text-white"
+                        aria-label={`Eliminar etiqueta ${label.name}`}
+                        title="Eliminar etiqueta"
+                      >
+                        ✕
+                      </button>
+                    </span>
                   )
                 })}
               </div>
             )}
+
+            <form onSubmit={handleCreateLabelSubmit} className="flex flex-col gap-2 border-t border-border-subtle pt-3">
+              <label htmlFor="new-label-name" className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Nueva etiqueta
+              </label>
+              <input
+                id="new-label-name"
+                type="text"
+                value={newLabelName}
+                onChange={(e) => setNewLabelName(e.target.value)}
+                placeholder="Nombre de la etiqueta"
+                className="rounded-lg border border-border-subtle px-2 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <div className="flex flex-wrap items-center gap-1.5">
+                {LABEL_COLORS.map((c) => (
+                  <button
+                    key={c.hex}
+                    type="button"
+                    onClick={() => setNewLabelColor(c.hex)}
+                    className={`h-6 w-6 shrink-0 rounded ${
+                      newLabelColor === c.hex ? 'ring-2 ring-primary ring-offset-1' : ''
+                    }`}
+                    style={{ backgroundColor: c.hex }}
+                    aria-label={`Elegir color ${c.name}`}
+                    title={c.name}
+                  />
+                ))}
+                {/* Native color picker -- on most OSes this literally renders as a
+                    color wheel, covering "any color" without a hand-built one. */}
+                <label
+                  className="relative flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-dashed border-slate-300 text-xs leading-none text-slate-400 transition-colors hover:border-primary hover:text-primary"
+                  title="Elegir cualquier color"
+                >
+                  <input
+                    type="color"
+                    value={newLabelColor}
+                    onChange={(e) => setNewLabelColor(e.target.value)}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    aria-label="Elegir un color personalizado"
+                  />
+                  +
+                </label>
+              </div>
+              <button
+                type="submit"
+                disabled={!newLabelName.trim()}
+                className="self-start cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Agregar etiqueta
+              </button>
+            </form>
           </CollapsiblePanel>
 
           <CollapsiblePanel id="card-field-panel-checklist" isOpen={openField.checklist}>

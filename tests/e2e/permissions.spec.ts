@@ -28,7 +28,6 @@ import {
   makeTestUser,
   openCard,
   openCardField,
-  openLabelsPanel,
   openMembersPanel,
   signUp,
 } from './fixtures'
@@ -87,17 +86,12 @@ test.describe('owner vs member permissions', () => {
         await expect(cardItem(memberPage, 'Member List', 'Member Card edited')).toBeVisible()
       })
 
-      await test.step('member can create labels and assign them', async () => {
-        await openLabelsPanel(memberPage)
+      await test.step('member can create labels (from inside a card) and they get auto-assigned', async () => {
+        await openCard(memberPage, 'Member List', 'Member Card edited')
+        await openCardField(memberPage, 'etiquetas')
         await memberPage.getByLabel('Nueva etiqueta').fill('Member Label')
         await memberPage.getByRole('button', { name: 'Elegir color azul' }).click()
         await memberPage.getByRole('button', { name: 'Agregar etiqueta' }).click()
-        await expect(memberPage.getByText('Member Label', { exact: true })).toBeVisible()
-        await memberPage.getByRole('button', { name: 'Cerrar' }).click()
-
-        await openCard(memberPage, 'Member List', 'Member Card edited')
-        await openCardField(memberPage, 'etiquetas')
-        await memberPage.getByRole('button', { name: 'Member Label', exact: true }).click()
         // exact: true -- once assigned, the underlying CardItem's label pill
         // (a childless <span title="Member Label">) folds that title into
         // the card button's own accessible name too (see cardItem()'s doc

@@ -17,6 +17,8 @@ interface CardItemProps {
   onUpdate: (cardId: string, updates: CardUpdate) => void
   onDelete: (cardId: string) => void
   onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
+  onCreateLabel: (name: string, color: string) => Promise<Label | null>
+  onDeleteLabel: (labelId: string) => void
   onCardModalClose: (cardId: string) => void
 }
 
@@ -129,6 +131,8 @@ export function CardItem({
   onUpdate,
   onDelete,
   onToggleLabel,
+  onCreateLabel,
+  onDeleteLabel,
   onCardModalClose,
 }: CardItemProps) {
   const [open, setOpen] = useState(false)
@@ -183,6 +187,8 @@ export function CardItem({
           onUpdate={onUpdate}
           onDelete={onDelete}
           onToggleLabel={onToggleLabel}
+          onCreateLabel={onCreateLabel}
+          onDeleteLabel={onDeleteLabel}
         />
       )}
     </>

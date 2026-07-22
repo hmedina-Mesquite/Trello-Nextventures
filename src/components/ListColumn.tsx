@@ -45,6 +45,8 @@ interface ListColumnProps {
   onUpdateCard: (cardId: string, updates: Partial<Pick<Card, 'title' | 'description' | 'start_date' | 'end_date' | 'complete' | 'location_data'>>) => void
   onDeleteCard: (cardId: string) => void
   onToggleLabel: (cardId: string, labelId: string, assign: boolean) => void
+  onCreateLabel: (name: string, color: string) => Promise<Label | null>
+  onDeleteLabel: (labelId: string) => void
   onCardModalClose: (cardId: string) => void
 }
 
@@ -60,6 +62,8 @@ export function ListColumn({
   onUpdateCard,
   onDeleteCard,
   onToggleLabel,
+  onCreateLabel,
+  onDeleteLabel,
   onCardModalClose,
 }: ListColumnProps) {
   const [editingName, setEditingName] = useState(false)
@@ -171,6 +175,8 @@ export function ListColumn({
               onUpdate={onUpdateCard}
               onDelete={onDeleteCard}
               onToggleLabel={onToggleLabel}
+              onCreateLabel={onCreateLabel}
+              onDeleteLabel={onDeleteLabel}
               onCardModalClose={onCardModalClose}
             />
           ))}

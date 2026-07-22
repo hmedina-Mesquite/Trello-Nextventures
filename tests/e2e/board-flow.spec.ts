@@ -18,7 +18,6 @@ import {
   makeTestUser,
   openCard,
   openCardField,
-  openLabelsPanel,
   signUp,
 } from './fixtures'
 
@@ -86,18 +85,16 @@ test.describe('critical user flow', () => {
       await expect(cardItem(page, 'To Do', 'Card A edited')).toHaveCount(0)
     })
 
-    await test.step('create a label and assign it to a card', async () => {
-      await openLabelsPanel(page)
+    await test.step('create a label from inside the card (auto-assigned on creation)', async () => {
+      await openCard(page, 'Doing', 'Card A edited')
+      await openCardField(page, 'etiquetas')
       await page.getByLabel('Nueva etiqueta').fill('Bug')
       // exact: true -- "verde" is a substring of the "verde lima" swatch's name.
       await page.getByRole('button', { name: 'Elegir color verde', exact: true }).click()
       await page.getByRole('button', { name: 'Agregar etiqueta' }).click()
-      await expect(page.getByText('Bug', { exact: true })).toBeVisible()
-      await page.getByRole('button', { name: 'Cerrar' }).click()
-
-      await openCard(page, 'Doing', 'Card A edited')
-      await openCardField(page, 'etiquetas')
-      await page.getByRole('button', { name: 'Bug' }).click() // toggles assignment on
+      await expect(
+        page.getByRole('button', { name: 'Bug', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true')
       await closeCardModal(page)
       await expect(cardItem(page, 'Doing', 'Card A edited').locator('span[title="Bug"]')).toBeVisible()
     })

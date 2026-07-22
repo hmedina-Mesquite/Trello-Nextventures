@@ -254,6 +254,40 @@ export default function CalendarPage() {
     )
   }
 
+  async function handleCreateLabel(name: string, color: string): Promise<Label | null> {
+    if (!selected) return null
+    const { data, error: insertError } = await supabase
+      .from('labels')
+      .insert({ board_id: selected.card.boardId, name, color })
+      .select()
+      .single()
+    if (insertError) {
+      setError(insertError.message)
+      return null
+    }
+    const newLabel = data as Label
+    setSelected((prev) => (prev ? { ...prev, boardLabels: [...prev.boardLabels, newLabel] } : prev))
+    return newLabel
+  }
+
+  async function handleDeleteLabel(labelId: string) {
+    if (!window.confirm('¿Eliminar esta etiqueta? Se quitará de todas las tarjetas.')) return
+    const { error: deleteError } = await supabase.from('labels').delete().eq('id', labelId)
+    if (deleteError) {
+      setError(deleteError.message)
+      return
+    }
+    setSelected((prev) =>
+      prev
+        ? {
+            ...prev,
+            boardLabels: prev.boardLabels.filter((l) => l.id !== labelId),
+            assignedLabelIds: prev.assignedLabelIds.filter((id) => id !== labelId),
+          }
+        : prev,
+    )
+  }
+
   const cardsByDay = new Map<string, CalendarCard[]>()
   for (const card of cards) {
     const key = localDateKey(card.start_date!)
@@ -471,6 +505,8 @@ export default function CalendarPage() {
           onUpdate={(cardId, updates) => void handleUpdate(cardId, updates)}
           onDelete={(cardId) => void handleDelete(cardId)}
           onToggleLabel={(cardId, labelId, assign) => void handleToggleLabel(cardId, labelId, assign)}
+          onCreateLabel={handleCreateLabel}
+          onDeleteLabel={(labelId) => void handleDeleteLabel(labelId)}
         />
       )}
     </div>
