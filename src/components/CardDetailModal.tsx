@@ -34,7 +34,7 @@ function formatFileSize(bytes: number | null): string {
 type CollapsibleField = 'inicio' | 'fin' | 'ubicacion' | 'etiquetas' | 'checklist'
 
 function FieldIcon({ icon }: { icon: string }) {
-  return <img src={icon} alt="" aria-hidden="true" className="h-5 w-5" />
+  return <img src={icon} alt="" aria-hidden="true" className="h-7 w-7" />
 }
 
 interface FieldToggleButtonProps {
@@ -633,7 +633,7 @@ export function CardDetailModal({
 
         {/* Scrolls internally so the fixed-height (sm:) panel above doesn't clip content. */}
         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div className="mb-3 mt-2 flex flex-wrap gap-2">
             <FieldToggleButton
               icon={startDateIcon}
               label="Inicio"
