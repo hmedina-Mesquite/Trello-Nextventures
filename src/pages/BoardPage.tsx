@@ -5,7 +5,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCorners,
+  pointerWithin,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -902,7 +902,13 @@ export default function BoardPage() {
       {viewMode === 'tablero' && (
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        // pointerWithin (not closestCorners): closestCorners picked whichever
+        // droppable's corners were numerically nearest, even ones the pointer
+        // wasn't actually over -- with columns side by side that made "drop
+        // into the next list" only register near its exact center. pointerWithin
+        // only considers droppables the pointer is literally inside, so the
+        // whole column (not just its middle) is a valid drop target.
+        collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
@@ -922,8 +928,13 @@ export default function BoardPage() {
           {/* min-h-0: a flex-1 child in a flex-column parent still grows to
               fit its content's intrinsic height unless min-h-0 caps it --
               without it this row (and the page around it) would grow with
-              the tallest list instead of scrolling internally. */}
-          <div className="relative flex flex-1 min-h-0 items-stretch gap-4 overflow-x-auto p-4">
+              the tallest list instead of scrolling internally. items-start
+              (not items-stretch): each list sizes to its own cards instead
+              of always matching the tallest list's height; ListColumn's own
+              max-h-full still caps any single list at this row's height, so
+              a long list still scrolls internally rather than growing the
+              row/page. */}
+          <div className="relative flex flex-1 min-h-0 items-start gap-4 overflow-x-auto p-4">
             {lists.map((list) => (
               <ListColumn
                 key={list.id}

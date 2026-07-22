@@ -108,7 +108,7 @@ export function ListColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex h-full w-[85vw] max-w-xs flex-shrink-0 flex-col gap-2 rounded-xl bg-slate-50 p-3 shadow-card sm:w-72 ${
+      className={`list-column flex h-auto max-h-full w-[85vw] max-w-xs flex-shrink-0 flex-col gap-2 rounded-xl bg-slate-50 p-3 shadow-card sm:w-72 ${
         isDragging ? 'opacity-0' : ''
       }`}
     >

@@ -46,6 +46,16 @@ body {
   scrollbar-color: #cbd5e1 transparent;
 }
 
+/* List columns size to their own cards (see ListColumn.tsx) and grow/shrink
+   as cards are dragged in or out. `height` can't normally be transitioned
+   to/from its `auto` value -- `interpolate-size` (Chromium 129+) is the
+   native fix; unsupported browsers just fall back to an instant resize,
+   same as before this was added, so it's a pure enhancement either way. */
+.list-column {
+  interpolate-size: allow-keywords;
+  transition: height 200ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
