@@ -42,7 +42,10 @@ export async function signUp(page: Page, user: TestUser) {
   await page.goto('/signup')
   await page.getByLabel('Nombre de usuario').fill(user.username)
   await page.getByLabel('Correo electrónico').fill(user.email)
-  await page.getByLabel('Contraseña').fill(user.password)
+  // exact: true -- the show/hide toggle button next to this field (T144) has
+  // an aria-label of "Mostrar contraseña"/"Ocultar contraseña", which a
+  // non-exact getByLabel('Contraseña') would also match as a substring.
+  await page.getByLabel('Contraseña', { exact: true }).fill(user.password)
   await page.getByRole('button', { name: 'Registrarse' }).click()
   await expect(
     page.getByRole('heading', { name: 'Tus tableros' }),
@@ -53,7 +56,8 @@ export async function signUp(page: Page, user: TestUser) {
 export async function login(page: Page, user: Pick<TestUser, 'email' | 'password'>) {
   await page.goto('/login')
   await page.getByLabel('Correo electrónico').fill(user.email)
-  await page.getByLabel('Contraseña').fill(user.password)
+  // exact: true -- see the same note in signUp() above.
+  await page.getByLabel('Contraseña', { exact: true }).fill(user.password)
   await page.getByRole('button', { name: 'Iniciar sesión' }).click()
   await expect(page.getByRole('heading', { name: 'Tus tableros' })).toBeVisible()
 }

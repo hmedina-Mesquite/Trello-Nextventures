@@ -42,7 +42,9 @@ test.describe('auth', () => {
 
     await page.goto('/login')
     await page.getByLabel('Correo electrónico').fill(user.email)
-    await page.getByLabel('Contraseña').fill('definitely-not-the-password')
+    // exact: true -- the show/hide toggle button (T144) has an aria-label
+    // containing "contraseña" too, which a non-exact match would also hit.
+    await page.getByLabel('Contraseña', { exact: true }).fill('definitely-not-the-password')
     await page.getByRole('button', { name: 'Iniciar sesión' }).click()
 
     await expect(page).toHaveURL(/\/login$/)

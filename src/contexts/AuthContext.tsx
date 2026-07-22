@@ -32,6 +32,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // T146: supabase-js's onAuthStateChange fires (handing back a brand-new
+  // Session object each time, even when nothing meaningful changed) on every
+  // tab focus/visibility check it does internally, not just on an actual
+  // sign-in, sign-out, or token refresh. Every `useEffect([..., user])`
+  // downstream (BoardPage's board load chief among them) keys off `user`'s
+  // object identity to decide whether to refetch, so every plain tab refocus
+  // was masquerading as a fresh sign-in and triggering a full data refetch.
+  // Keep `user` referencing the same object across renders as long as the
+  // signed-in user's id hasn't actually changed -- this is React's documented
+  // "adjust state during render" pattern (see "You Might Not Need an Effect"),
+  // not an Effect, so it settles before paint with no extra flicker. `session`
+  // itself is left updating freely: nothing reads its identity, only
+  // ProtectedRoute's `!session` truthiness check, which this doesn't affect.
+  const [user, setUser] = useState<User | null>(null)
+  if ((session?.user?.id ?? null) !== (user?.id ?? null)) {
+    setUser(session?.user ?? null)
+  }
+
   useEffect(() => {
     let cancelled = false
 
@@ -72,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthContextValue = {
     session,
-    user: session?.user ?? null,
+    user,
     loading,
     signUp,
     signIn,

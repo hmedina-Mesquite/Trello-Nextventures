@@ -154,14 +154,15 @@ export default function CalendarPage() {
     void getGoogleConnectionStatus().then(setGoogleStatus)
     void pullGoogleCalendarEvents().then(() => load())
     void supabase.rpc('get_calendar_feed_token').then(({ data }) => setFeedToken((data as string) ?? null))
-    // Refresh from Google whenever the user comes back to this tab, since
-    // there's no server-side push notification wiring this app in the
-    // other direction -- see lib/googleCalendar.ts for the tradeoff.
-    function onFocus() {
-      void pullGoogleCalendarEvents().then(() => load())
-    }
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
+    // T146: this used to also re-pull-from-Google-and-reload on every
+    // `window.addEventListener('focus', ...)`, to pick up Google Calendar
+    // changes made outside this tab (there's no server-side push notification
+    // wiring this app in the other direction -- see lib/googleCalendar.ts for
+    // the tradeoff). But that meant a plain tab refocus -- not just an actual
+    // navigation to this page -- did a full local Supabase refetch too. The
+    // mount-time pull-and-load above plus the "Sincronizar ahora" button
+    // (handleManualSync) already cover Google freshness without refetching
+    // on every refocus.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
